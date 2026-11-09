@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+  <title>장부</title>
+
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 120'%3E%3Cpath d='M48.8 4.2c-1.8 0-3.3 1.1-3.9 2.7L2 74.5c-.8 2 0 4.2 1.7 5.2 1.8 1 4 .5 5.1-1.1l25.8-37.5-12.7 52.4c-.6 2.3.8 4.7 3.1 5.3.4.1.9.2 1.3.2 1.9 0 3.7-1.2 4.3-3.1l26-80.8c.7-2.1-.4-4.4-2.5-5.2-.8-.3-1.6-.3-2.4-.3z' fill='%2300ff66' stroke='%2300cc52' stroke-width='3'/%3E%3C/svg%3E">
+
+  <script>
+    (function() {
+      const theme = localStorage.getItem('bar_theme') || 'dark';
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    })();
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            darkBg: '#1f1f1f',
+            darkCard: '#262626',
+            darkBorder: '#383838',
+            accent: '#00ff66',
+            accentHover: '#00cc52',
+            customOrange: '#fb923c',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+    input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.8); cursor: pointer; width: 100%; height: 100%; position: absolute; right: 0; top: 0; opacity: 0; }
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-thumb { background: #484848; border-radius: 3px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    textarea { resize: none; overflow: hidden; }
+  </style>
+</head>
+<body class="bg-zinc-100 dark:bg-darkBg text-zinc-800 dark:text-zinc-100 p-4 sm:p-6 md:p-8 min-h-screen transition-colors duration-200">
+  
+  <div id="app" class="max-w-7xl mx-auto space-y-5 px-2 sm:px-4">
+    
+    <!-- 🔒 고정 계정 전용 로그인 모달 -->
+    <div v-if="!isLoggedIn" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="bg-white dark:bg-darkCard border border-zinc-200 dark:border-darkBorder p-6 sm:p-8 rounded-2xl shadow-2xl w-full max-w-md space-y-5">
+        <div class="text-center space-y-1">
+          <h2 class="text-xl sm:text-2xl font-bold flex items-center justify-center gap-2">
+            <span>🍸 장부 시스템</span>
+          </h2>
+          <p class="text-xs text-zinc-400 font-medium">관리자 전용 로그인 페이지입니다.</p>
+        </div>
+
+        <form @submit.prevent="handleLogin" class="space-y-4">
+          <div>
+            <label class="block text-xs text-zinc-400 mb-1 font-semibold">아이디</label>
+            <input type="text" v-model="authForm.username" required placeholder="아이디 입력" class="w-full p-2.5 rounded-lg bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-zinc-800 dark:text-zinc-100 outline-none focus:border-accent text-sm">
+          </div>
+
+          <div>
+            <label class="block text-xs text-zinc-400 mb-1 font-semibold">비밀번호</label>
+            <input type="password" v-model="authForm.password" required placeholder="비밀번호 입력" class="w-full p-2.5 rounded-lg bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-zinc-800 dark:text-zinc-100 outline-none focus:border-accent text-sm">
+          </div>
+
+          <!-- 🌟 아이디 저장 체크박스 추가 -->
+          <div class="flex items-center gap-2 pt-1">
+            <input type="checkbox" id="rememberId" v-model="authForm.rememberId" class="w-4 h-4 accent-accent cursor-pointer rounded">
+            <label for="rememberId" class="text-xs text-zinc-400 cursor-pointer select-none">아이디 저장</label>
+          </div>
+
+          <div v-if="authError" class="text-xs text-rose-500 text-center font-semibold bg-rose-500/10 p-2 rounded">
+            {{ authError }}
+          </div>
+
+          <button type="submit" class="w-full py-3 bg-accent hover:bg-accentHover text-zinc-950 font-bold rounded-lg text-sm transition shadow-lg">
+            로그인
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- 🌟 로그인 성공 시 열리는 메인 장부 UI -->
+    <template v-else>
+      <!-- 헤더 영역 -->
+      <header class="flex flex-col md:flex-row justify-between items-center gap-3 pb-3 border-b border-zinc-200 dark:border-darkBorder">
+        <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
+          <h1 class="text-lg sm:text-xl font-bold tracking-wide flex items-center gap-2">
+            <span>🍸 장부</span>
+            <span class="text-xs text-accent bg-accent/10 px-2 py-0.5 rounded font-mono">{{ selectedDate }}</span>
+          </h1>
+        </div>
+
+        <!-- 상단 중앙 운수 대통 배너 -->
+        <div class="bg-zinc-200/70 dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder px-6 py-1.5 rounded-lg shadow-inner">
+          <span class="text-sm sm:text-base font-bold tracking-widest text-customOrange font-mono">- 운수 대통 -</span>
+        </div>
+
+        <div class="flex items-center gap-1.5 sm:gap-2 w-full md:w-auto justify-end">
+          <div class="flex items-center gap-2 text-xs font-semibold mr-2 bg-zinc-200 dark:bg-darkCard px-3 py-1.5 rounded-lg border border-zinc-300 dark:border-darkBorder">
+            <span class="text-accent font-bold">👑 고구려</span>
+            <button @click="handleLogout" class="text-rose-400 hover:text-rose-300 ml-1 text-[11px] underline">로그아웃</button>
+          </div>
+
+          <div class="bg-zinc-200 dark:bg-darkCard p-1 rounded-lg flex items-center border border-zinc-300 dark:border-darkBorder">
+            <button @click="setTheme('light')" :class="theme === 'light' ? 'bg-white text-zinc-900 shadow-sm' : 'text-zinc-400'" class="px-2.5 py-1 rounded text-xs font-semibold transition">라이트</button>
+            <button @click="setTheme('dark')" :class="theme === 'dark' ? 'bg-accent text-zinc-950 font-bold shadow-sm' : 'text-zinc-400'" class="px-2.5 py-1 rounded text-xs font-semibold transition">다크</button>
+          </div>
+          <button @click="exportJSON" class="text-xs text-zinc-500 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white px-2 py-1.5 rounded bg-zinc-200 dark:bg-darkCard border border-zinc-300 dark:border-darkBorder transition">JSON 백업</button>
+        </div>
+      </header>
+
+      <!-- 상단 영역: 왼쪽 캘린더 / 오른쪽 요약 통계 카드 -->
+      <section class="grid grid-cols-1 md:grid-cols-12 gap-4 items-stretch">
+        
+        <!-- 왼쪽: 월별 캘린더 -->
+        <div class="md:col-span-7 bg-white dark:bg-darkCard border border-zinc-200 dark:border-darkBorder p-3 sm:p-4 rounded-xl shadow-sm space-y-2.5 flex flex-col justify-between">
+          <div class="flex justify-between items-center pb-2 border-b border-zinc-200 dark:border-darkBorder">
+            <div class="flex items-center gap-2">
+              <h2 class="text-xs font-bold text-zinc-600 dark:text-zinc-300 tracking-wider">MONTHLY CALENDAR</h2>
+              <span class="text-xs font-bold font-mono text-accent px-1.5 py-0.5 bg-accent/10 rounded">{{ calendarYear }}.{{ String(calendarMonth + 1).padStart(2, '0') }}</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <button @click="addRoomCard()" class="text-xs bg-accent hover:bg-accentHover text-zinc-950 font-bold px-2.5 py-1 rounded transition shadow-sm">
+                + 방 추가
+              </button>
+              <div class="flex items-center gap-1 ml-1">
+                <button @click="prevMonth" class="text-xs text-zinc-400 hover:text-zinc-900 dark:hover:text-white px-2 py-1">‹</button>
+                <button @click="nextMonth" class="text-xs text-zinc-400 hover:text-zinc-900 dark:hover:text-white px-2 py-1">›</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-7 gap-1 text-center text-[10px] sm:text-[11px] text-zinc-400 font-medium">
+            <div class="text-rose-500">일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div class="text-accent">토</div>
+          </div>
+
+          <div class="grid grid-cols-7 gap-1 flex-1">
+            <div v-for="(day, idx) in calendarDays" :key="idx" 
+                 @click="day.isCurrentMonth && selectDateFromCalendar(day.dateStr)"
+                 :class="[
+                   'h-10 sm:h-12 p-0.5 sm:p-1 rounded transition flex flex-col justify-between text-xs border',
+                   day.isCurrentMonth ? 'cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800/80' : 'opacity-25 pointer-events-none',
+                   selectedDate === day.dateStr ? 'bg-accent/10 border-accent shadow-sm' : 'border-transparent bg-zinc-50/50 dark:bg-[#202020]'
+                 ]">
+              <span class="text-[9px] sm:text-[10px] font-mono text-zinc-400">{{ day.dayNum }}</span>
+              <span v-if="day.isCurrentMonth && dailyRoomCountMap[day.dateStr]" 
+                    class="text-right font-mono font-bold text-[11px] sm:text-xs text-accent pr-0.5">
+                {{ dailyRoomCountMap[day.dateStr] }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 오른쪽: 요약 통계 카드들 -->
+        <div class="md:col-span-5 flex flex-col justify-between gap-3">
+          <div class="bg-white dark:bg-darkCard border border-zinc-200 dark:border-darkBorder p-4 rounded-xl shadow-sm flex flex-col justify-center space-y-3 flex-1">
+            <div class="flex items-center justify-between border-b border-zinc-200 dark:border-darkBorder pb-2">
+              <span class="text-[11px] sm:text-xs text-zinc-500 dark:text-zinc-400 font-semibold">술 총 수량 (선택한 날짜)</span>
+              <span class="text-xl font-bold font-mono text-customOrange">{{ todayTotalDrinks }}병</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] sm:text-xs text-zinc-500 dark:text-zinc-400 font-semibold">술 총 수량 (이번 달 전체)</span>
+              <span class="text-xl font-bold font-mono text-accent">{{ monthTotalDrinks }}병</span>
+            </div>
+          </div>
+
+          <div class="bg-white dark:bg-darkCard border border-zinc-200 dark:border-darkBorder p-4 rounded-xl shadow-sm flex items-center justify-between flex-1">
+            <div>
+              <span class="text-[11px] sm:text-xs text-zinc-500 dark:text-zinc-400 block font-semibold">테이블 현황</span>
+              <span class="text-2xl font-bold font-mono text-accent mt-1 block">
+                {{ currentDayData.rooms.length }}개
+              </span>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- 전체 검색 바 -->
+      <section class="bg-white dark:bg-darkCard border border-zinc-200 dark:border-darkBorder p-3 rounded-xl flex items-center gap-2">
+        <span class="text-xs font-bold text-accent whitespace-nowrap">전체 검색:</span>
+        <input type="text" v-model="searchQuery" placeholder="테이블, 손님, 접대원, 메모 검색..." class="w-full p-2 text-xs rounded-lg bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-zinc-100 outline-none focus:border-accent">
+      </section>
+
+      <!-- 방(T/R) 카드 리스트 -->
+      <section class="space-y-3" v-show="!searchQuery.trim() || filteredRooms.length > 0">
+        <div class="flex justify-between items-center">
+          <span class="text-xs font-bold text-zinc-400 tracking-wider">
+            {{ searchQuery.trim() ? `🔍 테이블 검색 결과 (${filteredRooms.length}건)` : `ROOMS / TABLES (${selectedDate} 영업 테이블)` }}
+          </span>
+          <span class="text-xs text-zinc-500">* 항목을 수정하면 실시간 반영 및 저장됩니다.</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div v-for="(roomWrap, idx) in filteredRooms" :key="roomWrap._originalRef._id || idx" class="bg-white dark:bg-darkCard border border-zinc-200 dark:border-darkBorder rounded-xl p-4 shadow-sm space-y-3 relative">
+            
+            <div class="flex justify-between items-center pb-2 border-b border-zinc-200 dark:border-darkBorder">
+              <div class="flex items-center gap-2">
+                <span v-if="searchQuery.trim()" class="text-xs bg-accent/20 text-accent font-mono px-2 py-0.5 rounded font-bold">{{ roomWrap._date }}</span>
+                <select v-model="roomWrap._originalRef.no" @change="saveData" class="bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-accent font-bold text-sm px-2 py-1 rounded outline-none">
+                  <option value="1T">1T</option>
+                  <option value="2T">2T</option>
+                  <option value="3T">3T</option>
+                  <option value="5T">5T</option>
+                  <option value="6T">6T</option>
+                  <option value="7T">7T</option>
+                </select>
+                <span class="text-xs text-zinc-400">테이블</span>
+              </div>
+              <button @click="deleteRoom(roomWrap)" class="text-xs text-rose-500 hover:text-rose-400 font-bold p-1">삭제</button>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 text-xs">
+              
+              <!-- 왼쪽 컬럼: 손님, 옵션(RT / 모텔비/수량), 술/수량 -->
+              <div class="sm:col-span-5 space-y-2">
+                <div>
+                  <label class="block text-[10px] text-zinc-400 mb-0.5">손님</label>
+                  <input type="text" v-model="roomWrap._originalRef.customer" @input="saveData" placeholder="손님 이름 / 특징" class="w-full p-2 rounded bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-darkBorder text-zinc-100 outline-none focus:border-accent">
+                </div>
+
+                <!-- RT 체크 및 모텔비 단가 + 수량 선택 영역 -->
+                <div class="flex flex-col gap-1.5 bg-zinc-50 dark:bg-[#1a1a1a] p-2 rounded border border-zinc-200 dark:border-darkBorder">
+                  <div class="flex items-center justify-between">
+                    <label class="flex items-center gap-1 cursor-pointer select-none">
+                      <input type="checkbox" v-model="roomWrap._originalRef.rtChecked" @change="saveData" class="w-3.5 h-3.5 accent-accent cursor-pointer">
+                      <span class="text-[10px] font-bold text-accent">RT (+2만)</span>
+                    </label>
+
+                    <div class="flex items-center gap-1">
+                      <span class="text-[10px] text-zinc-400">모텔비:</span>
+                      <select v-model.number="roomWrap._originalRef.motelFee" @change="saveData" class="p-1 rounded bg-white dark:bg-[#222] border border-zinc-300 dark:border-darkBorder text-customOrange font-bold text-[11px] outline-none">
+                        <option :value="0">없음</option>
+                        <option :value="50000">현금 (5만)</option>
+                        <option :value="100000">카드 (10만)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <!-- 모텔비 수량 선택 (모텔비가 설정되어 있을 때만 활성화) -->
+                  <div v-if="roomWrap._originalRef.motelFee > 0" class="flex items-center justify-between pt-1 border-t border-zinc-200 dark:border-zinc-800">
+                    <span class="text-[10px] text-zinc-400">모텔 횟수(개수):</span>
+                    <select v-model.number="roomWrap._originalRef.motelQty" @change="saveData" class="p-0.5 px-1.5 rounded bg-white dark:bg-[#222] border border-zinc-300 dark:border-darkBorder text-accent font-bold text-[11px] outline-none">
+                      <option v-for="n in 5" :key="n" :value="n">{{ n }}개</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-[10px] text-zinc-400 mb-0.5">술 / 수량</label>
+                  <div class="flex gap-1.5">
+                    <select v-model="roomWrap._originalRef.drinkType" @change="saveData" class="flex-1 min-w-[65px] p-1.5 rounded bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-darkBorder text-zinc-100 outline-none text-xs">
+                      <option value="">술 선택</option>
+                      <option value="12년">12년</option>
+                      <option value="17년">17년</option>
+                    </select>
+                    <select v-model.number="roomWrap._originalRef.drinkQty" @change="saveData" class="w-[60px] shrink-0 p-1.5 rounded bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-darkBorder text-accent font-bold outline-none text-xs text-center">
+                      <option v-for="n in 12" :key="n" :value="n">{{ n }}병</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 오른쪽 컬럼: 방 내 접대원 관리 영역 -->
+              <div class="sm:col-span-7 space-y-1.5 bg-zinc-50/50 dark:bg-[#202020] p-2.5 rounded-lg border border-zinc-200 dark:border-darkBorder flex flex-col justify-between">
+                <div>
+                  <div class="flex justify-between items-center mb-1.5">
+                    <label class="text-[10px] font-bold text-customOrange">접대원</label>
+                    <button @click="addGirl(roomWrap._originalRef)" class="text-[10px] bg-accent/20 text-accent px-1.5 py-0.5 rounded font-bold hover:bg-accent/30">+ 추가</button>
+                  </div>
+
+                  <div class="space-y-1.5 pr-0">
+                    <div v-for="(g, gIdx) in roomWrap._originalRef.girls" :key="gIdx" class="flex gap-1 items-center min-w-0">
+                      
+                      <!-- 빨간색 M 글자 및 체크박스 -->
+                      <div class="flex items-center gap-0.5 shrink-0 px-0.5">
+                        <span class="text-[11px] font-bold text-rose-500">M</span>
+                        <input type="checkbox" v-model="g.checked" @change="saveData" class="w-3.5 h-3.5 accent-rose-500 cursor-pointer">
+                      </div>
+
+                      <input type="text" v-model="g.name" @input="saveData" placeholder="이름" class="w-[16%] min-w-0 px-1 py-1 text-xs rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-darkBorder text-zinc-100 outline-none">
+                      
+                      <select v-model="g.office" @change="saveData" class="w-[23%] min-w-0 px-0.5 py-1 text-[11px] rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-darkBorder text-customOrange font-semibold outline-none">
+                        <option value="">사무실</option>
+                        <option value="거성">거성</option>
+                        <option value="비비">비비</option>
+                        <option value="여우">여우</option>
+                        <option value="타임">타임</option>
+                        <option value="패밀리">패밀리</option>
+                        <option value="하이디">하이디</option>
+                        <option value="현대">현대</option>
+                        <option value="퀸">퀸</option>
+                      </select>
+
+                      <select v-model="g.tc" @change="saveData" class="w-[16%] min-w-0 px-0.5 py-1 text-[11px] rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-darkBorder text-accent font-mono font-bold outline-none text-center">
+                        <option value="">시간1</option>
+                        <option value="+1">+1</option>
+                        <option value="+2">+2</option>
+                        <option value="+3">+3</option>
+                        <option value="+4">+4</option>
+                        <option value="1H">1H</option>
+                        <option value="2H">2H</option>
+                        <option value="3H">3H</option>
+                        <option value="4H">4H</option>
+                        <option value="5H">5H</option>
+                        <option value="6H">6H</option>
+                      </select>
+
+                      <select v-model="g.tc2" @change="saveData" class="w-[16%] min-w-0 px-0.5 py-1 text-[11px] rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-darkBorder text-accent font-mono font-bold outline-none text-center">
+                        <option value="">시간2</option>
+                        <option value="+1">+1</option>
+                        <option value="+2">+2</option>
+                        <option value="+3">+3</option>
+                        <option value="+4">+4</option>
+                        <option value="1H">1H</option>
+                        <option value="2H">2H</option>
+                        <option value="3H">3H</option>
+                        <option value="4H">4H</option>
+                        <option value="5H">5H</option>
+                        <option value="6H">6H</option>
+                      </select>
+
+                      <span class="w-[16%] min-w-0 text-[11px] font-bold text-customOrange text-center truncate" :title="'시간비 합계: ' + formatKoreanFee(calculateGirlFee(g))">
+                        {{ formatKoreanFee(calculateGirlFee(g)) }}
+                      </span>
+
+                      <button @click="removeGirl(roomWrap._originalRef, gIdx)" class="w-[6%] text-rose-500 font-bold py-1 text-xs shrink-0 text-center hover:bg-rose-500/10 rounded">×</button>
+                    </div>
+
+                    <div v-if="!roomWrap._originalRef.girls || roomWrap._originalRef.girls.length === 0" class="text-[10px] text-zinc-500 text-center py-4">
+                      등록된 접대원이 없습니다.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- 방 하단 총 합계 금액 분리 표시 (현금가 / 카드가) & 이동된 결제금액 1, 2 입력 칸 -->
+            <div class="bg-zinc-100 dark:bg-[#181818] p-2.5 rounded-lg border border-zinc-200 dark:border-darkBorder space-y-2 text-xs">
+              <div class="grid grid-cols-2 gap-2">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between bg-zinc-200/50 dark:bg-[#222] p-2 rounded border border-zinc-300 dark:border-zinc-700/60">
+                  <span class="font-bold text-zinc-400">💵 현금가 총액</span>
+                  <span class="text-sm font-extrabold font-mono text-accent">
+                    ₩{{ calculateRoomTotalCash(roomWrap._originalRef).toLocaleString() }}
+                  </span>
+                </div>
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between bg-zinc-200/50 dark:bg-[#222] p-2 rounded border border-zinc-300 dark:border-zinc-700/60">
+                  <span class="font-bold text-zinc-400">💳 카드가 총액</span>
+                  <span class="text-sm font-extrabold font-mono text-customOrange">
+                    ₩{{ calculateRoomTotalCard(roomWrap._originalRef).toLocaleString() }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- 현금가/카드가 바로 밑 결제금액 1, 2 입력 영역 -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-zinc-200 dark:border-zinc-800">
+                <!-- 결제금액 1 (기본: 현금) -->
+                <div>
+                  <label class="block text-[10px] text-zinc-400 mb-0.5">결제금액 1 (₩)</label>
+                  <div class="flex gap-1.5">
+                    <input type="number" v-model.number="roomWrap._originalRef.price" @input="saveData" placeholder="금액 입력" class="flex-1 min-w-[90px] p-1.5 rounded bg-white dark:bg-[#1e1e1e] border border-zinc-200 dark:border-darkBorder text-accent font-mono font-bold outline-none focus:border-accent text-xs">
+                    <select v-model="roomWrap._originalRef.payMethod" @change="saveData" class="w-[65px] shrink-0 p-1.5 rounded bg-white dark:bg-[#1e1e1e] border border-zinc-200 dark:border-darkBorder text-customOrange font-semibold outline-none text-xs text-center">
+                      <option value="현금">현금</option>
+                      <option value="카드">카드</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- 결제금액 2 (기본: 카드) -->
+                <div>
+                  <label class="block text-[10px] text-zinc-400 mb-0.5">결제금액 2 (₩)</label>
+                  <div class="flex gap-1.5">
+                    <input type="number" v-model.number="roomWrap._originalRef.price2" @input="saveData" placeholder="금액 입력" class="flex-1 min-w-[90px] p-1.5 rounded bg-white dark:bg-[#1e1e1e] border border-zinc-200 dark:border-darkBorder text-accent font-mono font-bold outline-none focus:border-accent text-xs">
+                    <select v-model="roomWrap._originalRef.payMethod2" @change="saveData" class="w-[65px] shrink-0 p-1.5 rounded bg-white dark:bg-[#1e1e1e] border border-zinc-200 dark:border-darkBorder text-customOrange font-semibold outline-none text-xs text-center">
+                      <option value="현금">현금</option>
+                      <option value="카드">카드</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 특이사항 / 메모 영역 -->
+            <div class="pt-2 border-t border-zinc-200 dark:border-darkBorder/60">
+              <label class="block text-[10px] text-zinc-400 mb-1 font-semibold">📝 특이사항 / 메모</label>
+              <textarea v-model="roomWrap._originalRef.note" @input="resizeTextarea($event); saveData()" ref="noteAreas" placeholder="내용을 입력하세요..." class="w-full p-2 text-xs rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-darkBorder text-zinc-200 outline-none focus:border-accent min-h-[42px] leading-relaxed"></textarea>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- 전체 공통 접대원 & 손님 개별 목록 관리 현황판 -->
+      <section class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        
+        <!-- 왼쪽: 접대원 현황판 -->
+        <div class="bg-white dark:bg-darkCard border border-zinc-200 dark:border-darkBorder p-4 sm:p-5 rounded-xl shadow-sm space-y-3 flex flex-col justify-between" v-show="!searchQuery.trim() || filteredGirls.length > 0">
+          <div>
+            <div class="flex justify-between items-center pb-2 border-b border-zinc-200 dark:border-darkBorder mb-3">
+              <div class="flex items-center gap-2">
+                <h3 class="text-xs font-bold text-customOrange tracking-wider">👩‍💼 접대원 개별 목록 관리 현황판</h3>
+                <span class="text-[10px] bg-customOrange/10 text-customOrange px-2 py-0.5 rounded font-bold">총 {{ filteredGirls.length }}명</span>
+              </div>
+              <button @click="addStandaloneGirl" class="text-xs bg-customOrange hover:bg-orange-600 text-zinc-950 font-bold px-3 py-1 rounded transition shadow-sm">
+                + 접대원 추가
+              </button>
+            </div>
+
+            <div class="space-y-3">
+              <div v-for="(sg, sgIdx) in filteredGirls" :key="sgIdx" class="bg-zinc-50 dark:bg-[#202020] border border-zinc-200 dark:border-darkBorder p-3 rounded-lg flex items-center gap-2">
+                <input type="text" v-model="sg.name" @input="saveData" placeholder="이름" class="w-[18%] min-w-[60px] p-2 text-xs rounded bg-white dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-zinc-100 outline-none font-semibold">
+                <select v-model="sg.type" @change="saveData" class="w-[18%] min-w-[65px] p-2 text-xs rounded bg-white dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-accent font-bold outline-none text-center">
+                  <option value="">선택</option>
+                  <option value="시간">시간</option>
+                  <option value="개인">개인</option>
+                </select>
+                <textarea v-model="sg.memo" @input="resizeTextareaByEnter($event); saveData()" placeholder="메모" class="flex-1 min-w-0 px-2 py-1.5 text-xs rounded bg-white dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-zinc-200 outline-none leading-relaxed h-[32px]"></textarea>
+                <button @click="removeStandaloneGirlOriginalIndex(sg)" class="text-rose-500 font-bold px-2 py-1.5 text-xs shrink-0 hover:bg-rose-500/10 rounded">삭제</button>
+              </div>
+
+              <div v-if="filteredGirls.length === 0" class="py-6 text-center text-zinc-500 text-xs">
+                등록된 접대원이 없습니다.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 오른쪽: 손님 현황판 -->
+        <div class="bg-white dark:bg-darkCard border border-zinc-200 dark:border-darkBorder p-4 sm:p-5 rounded-xl shadow-sm space-y-3 flex flex-col justify-between" v-show="!searchQuery.trim() || filteredCustomers.length > 0">
+          <div>
+            <div class="flex justify-between items-center pb-2 border-b border-zinc-200 dark:border-darkBorder mb-3">
+              <div class="flex items-center gap-2">
+                <h3 class="text-xs font-bold text-accent tracking-wider">🕺 손님 개별 목록 관리 현황판</h3>
+                <span class="text-[10px] bg-accent/10 text-accent px-2 py-0.5 rounded font-bold">총 {{ filteredCustomers.length }}명</span>
+              </div>
+              <button @click="addStandaloneCustomer" class="text-xs bg-accent hover:bg-accentHover text-zinc-950 font-bold px-3 py-1 rounded transition shadow-sm">
+                + 손님 추가
+              </button>
+            </div>
+
+            <div class="space-y-3">
+              <div v-for="(sc, scIdx) in filteredCustomers" :key="scIdx" class="bg-zinc-50 dark:bg-[#202020] border border-zinc-200 dark:border-darkBorder p-3 rounded-lg flex items-center gap-2">
+                <input type="text" v-model="sc.name" @input="saveData" placeholder="이름" class="w-[18%] min-w-[60px] p-2 text-xs rounded bg-white dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-zinc-100 outline-none font-semibold">
+                <select v-model="sc.type" @change="saveData" class="w-[18%] min-w-[65px] p-2 text-xs rounded bg-white dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-accent font-bold outline-none text-center">
+                  <option value="">선택</option>
+                  <option value="시간">시간</option>
+                  <option value="개인">개인</option>
+                </select>
+                <textarea v-model="sc.memo" @input="resizeTextareaByEnter($event); saveData()" placeholder="메모" class="flex-1 min-w-0 px-2 py-1.5 text-xs rounded bg-white dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-zinc-200 outline-none leading-relaxed h-[32px]"></textarea>
+                <button @click="removeStandaloneCustomerOriginalIndex(sc)" class="text-rose-500 font-bold px-2 py-1.5 text-xs shrink-0 hover:bg-rose-500/10 rounded">삭제</button>
+              </div>
+
+              <div v-if="filteredCustomers.length === 0" class="py-6 text-center text-zinc-500 text-xs">
+                등록된 손님이 없습니다.
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- 하단 수기 장부 스타일 매출/매입 정산표 -->
+      <section class="bg-white dark:bg-darkCard border border-zinc-200 dark:border-darkBorder p-4 sm:p-5 rounded-xl shadow-sm space-y-3">
+        <div class="flex justify-between items-center border-b border-zinc-200 dark:border-darkBorder pb-2">
+          <h3 class="text-xs font-bold text-zinc-300 tracking-wider">DAILY BALANCE ({{ selectedDate }} 일일 매출 / 매입 수기 정산표)</h3>
+          <span class="text-[10px] text-accent">* 상단 테이블 결제금액이 현금/카드 매출에 자동 반영됩니다.</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
+          <div class="space-y-2 bg-zinc-50 dark:bg-[#202020] p-3.5 rounded-lg border border-zinc-200 dark:border-darkBorder">
+            <span class="font-bold text-accent block border-b border-zinc-700 pb-1">[ 매출 항목 ]</span>
+            <div class="flex items-center justify-between">
+              <span class="text-zinc-400">현금 매출 (테이블 자동 + 수동):</span>
+              <input type="number" v-model.number="currentDayData.mCash" @input="saveData" class="p-1 rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-right w-32 font-mono text-zinc-100 outline-none">
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-zinc-400">카드 매출 (테이블 자동 + 수동):</span>
+              <input type="number" v-model.number="currentDayData.mCard" @input="saveData" class="p-1 rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-right w-32 font-mono text-zinc-100 outline-none">
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-rose-400">외상 발생:</span>
+              <input type="number" v-model.number="currentDayData.mCredit" @input="saveData" class="p-1 rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-right w-32 font-mono text-rose-400 outline-none">
+            </div>
+            <div class="flex items-center justify-between pt-2 border-t border-zinc-700 font-bold">
+              <span>매출 합계:</span>
+              <span class="text-accent font-mono text-sm">₩{{ (totalAutoCash + totalAutoCard + (currentDayData.mCredit || 0)).toLocaleString() }}</span>
+            </div>
+          </div>
+
+          <div class="space-y-2 bg-zinc-50 dark:bg-[#202020] p-3.5 rounded-lg border border-zinc-200 dark:border-darkBorder">
+            <span class="font-bold text-customOrange block border-b border-zinc-700 pb-1">[ 매입 / 지출 항목 ]</span>
+            <div class="flex items-center justify-between">
+              <span class="text-zinc-400">현금 지출:</span>
+              <input type="number" v-model.number="currentDayData.pCash" @input="saveData" class="p-1 rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-right w-32 font-mono text-zinc-100 outline-none">
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-zinc-400">카드 지출:</span>
+              <input type="number" v-model.number="currentDayData.pCard" @input="saveData" class="p-1 rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-right w-32 font-mono text-zinc-100 outline-none">
+            </div>
+            <div class="flex items-center justify-between pt-6 border-t border-zinc-700 font-bold">
+              <span>매입 합계:</span>
+              <span class="text-customOrange font-mono text-sm">₩{{ ((currentDayData.pCash || 0) + (currentDayData.pCard || 0)).toLocaleString() }}</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </template>
+
+  </div>
+
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      const { createApp, ref, computed } = Vue;
+
+      createApp({
+        setup() {
+          const theme = ref(localStorage.getItem('bar_theme') || 'dark');
+          const setTheme = (mode) => {
+            theme.value = mode;
+            localStorage.setItem('bar_theme', mode);
+            if (mode === 'dark') {
+              document.documentElement.classList.add('dark');
+            } else {
+              document.documentElement.classList.remove('dark');
+            }
+          };
+
+          // 🔑 고정 로그인 시스템 & 아이디 저장 기능
+          const ALLOWED_ID = '고구려';
+          const ALLOWED_PW = '1238';
+
+          const isLoggedIn = ref(localStorage.getItem('bar_is_logged_in') === 'true');
+          const authError = ref('');
+          
+          // 저장된 아이디 불러오기 (없으면 빈값)
+          const savedId = localStorage.getItem('bar_remembered_id') || '';
+          const authForm = ref({
+            username: savedId,
+            password: '',
+            rememberId: savedId !== ''
+          });
+
+          const handleLogin = () => {
+            authError.value = '';
+            const uname = authForm.value.username.trim();
+            const pwd = authForm.value.password;
+
+            if (uname === ALLOWED_ID && pwd === ALLOWED_PW) {
+              isLoggedIn.value = true;
+              localStorage.setItem('bar_is_logged_in', 'true');
+
+              // 아이디 저장 체크 여부에 따라 처리
+              if (authForm.value.rememberId) {
+                localStorage.setItem('bar_remembered_id', uname);
+              } else {
+                localStorage.removeItem('bar_remembered_id');
+              }
+
+              authForm.value.password = '';
+            } else {
+              authError.value = '아이디 또는 비밀번호가 일치하지 않습니다.';
+            }
+          };
+
+          const handleLogout = () => {
+            isLoggedIn.value = false;
+            localStorage.removeItem('bar_is_logged_in');
+            // 로그아웃 시에도 저장된 아이디는 유지하되 비밀번호만 초기화
+            const remembered = localStorage.getItem('bar_remembered_id') || '';
+            authForm.value = {
+              username: remembered,
+              password: '',
+              rememberId: remembered !== ''
+            };
+          };
+
+          // 📊 장부 데이터 로드 & 저장 (기존 데이터와 하위호환 유지)
+          const savedDb = localStorage.getItem('bar_trade_journal_db_v46');
+          const db = ref(savedDb ? JSON.parse(savedDb) : {});
+
+          const savedMasterGirls = localStorage.getItem('bar_master_girls_v1');
+          const masterGirls = ref(savedMasterGirls ? JSON.parse(savedMasterGirls) : []);
+
+          const savedMasterCustomers = localStorage.getItem('bar_master_customers_v1');
+          const masterCustomers = ref(savedMasterCustomers ? JSON.parse(savedMasterCustomers) : []);
+
+          const saveData = () => {
+            localStorage.setItem('bar_trade_journal_db_v46', JSON.stringify(db.value));
+            localStorage.setItem('bar_master_girls_v1', JSON.stringify(masterGirls.value));
+            localStorage.setItem('bar_master_customers_v1', JSON.stringify(masterCustomers.value));
+          };
+
+          const now = new Date();
+          const yearStr = now.getFullYear();
+          const monthStr = String(now.getMonth() + 1).padStart(2, '0');
+          const dateStr = String(now.getDate()).padStart(2, '0');
+          const todayStr = `${yearStr}-${monthStr}-${dateStr}`;
+
+          const selectedDate = ref(todayStr);
+          const searchQuery = ref('');
+
+          const calendarYear = ref(now.getFullYear());
+          const calendarMonth = ref(now.getMonth());
+
+          const initDateData = (dStr) => {
+            if (!db.value[dStr]) {
+              db.value[dStr] = {
+                rooms: [],
+                mCash: 0, mCard: 0, mCredit: 0, pCash: 0, pCard: 0
+              };
+            }
+          };
+
+          initDateData(todayStr);
+
+          const currentDayData = computed(() => {
+            initDateData(selectedDate.value);
+            return db.value[selectedDate.value];
+          });
+
+          const totalAutoCash = computed(() => {
+            let sum = Number(currentDayData.value.mCash) || 0;
+            if (currentDayData.value.rooms) {
+              currentDayData.value.rooms.forEach(r => {
+                const p1 = Number(r.price) || 0;
+                const m1 = r.payMethod || '현금';
+                if (m1 === '현금') sum += p1;
+
+                const p2 = Number(r.price2) || 0;
+                const m2 = r.payMethod2 || '카드';
+                if (m2 === '현금') sum += p2;
+              });
+            }
+            return sum;
+          });
+
+          const totalAutoCard = computed(() => {
+            let sum = Number(currentDayData.value.mCard) || 0;
+            if (currentDayData.value.rooms) {
+              currentDayData.value.rooms.forEach(r => {
+                const p1 = Number(r.price) || 0;
+                const m1 = r.payMethod || '현금';
+                if (m1 === '카드') sum += p1;
+
+                const p2 = Number(r.price2) || 0;
+                const m2 = r.payMethod2 || '카드';
+                if (m2 === '카드') sum += p2;
+              });
+            }
+            return sum;
+          });
+
+          const calculateGirlFee = (g) => {
+            let total = 0;
+            const parseValue = (val) => {
+              if (!val) return 0;
+              if (val.endsWith('H')) {
+                const hours = parseInt(val) || 0;
+                return hours * 50000;
+              } else if (val.startsWith('+')) {
+                const plus = parseInt(val) || 0;
+                return plus * 10000;
+              }
+              return 0;
+            };
+            total += parseValue(g.tc);
+            total += parseValue(g.tc2);
+
+            if (g.checked) {
+              total += 200000;
+            }
+
+            return total;
+          };
+
+          const getCommonExtraFee = (r) => {
+            let extra = 0;
+            if (r.rtChecked) extra += 20000;
+            if (r.girls && Array.isArray(r.girls)) {
+              r.girls.forEach(g => {
+                extra += calculateGirlFee(g);
+              });
+            }
+            return extra;
+          };
+
+          const calculateRoomTotalCash = (r) => {
+            const qty = Number(r.drinkQty) || 0;
+            let drinkPrice = 0;
+            if (r.drinkType === '12년') drinkPrice = 120000;
+            else if (r.drinkType === '17년') drinkPrice = 170000;
+
+            const motelUnit = (Number(r.motelFee) === 50000) ? 50000 : 0;
+            const motelQty = Number(r.motelQty) || 1;
+            const totalMotel = motelUnit * motelQty;
+
+            return (drinkPrice * qty) + getCommonExtraFee(r) + totalMotel;
+          };
+
+          const calculateRoomTotalCard = (r) => {
+            const qty = Number(r.drinkQty) || 0;
+            let drinkPrice = 0;
+            if (r.drinkType === '12년') drinkPrice = 150000;
+            else if (r.drinkType === '17년') drinkPrice = 200000;
+
+            const motelUnit = (Number(r.motelFee) === 100000) ? 100000 : 0;
+            const motelQty = Number(r.motelQty) || 1;
+            const totalMotel = motelUnit * motelQty;
+
+            return (drinkPrice * qty) + getCommonExtraFee(r) + totalMotel;
+          };
+
+          const formatKoreanFee = (amount) => {
+            if (amount <= 0) return '0원';
+            const man = Math.floor(amount / 10000);
+            const remainder = amount % 10000;
+            if (remainder > 0) {
+              return `${man.toLocaleString()}만 ${(remainder / 1000).toFixed(0)}천`;
+            }
+            return `${man}만`;
+          };
+
+          const resizeTextarea = (event) => {
+            const el = event.target;
+            el.style.height = 'auto';
+            el.style.height = (el.scrollHeight) + 'px';
+          };
+
+          const resizeTextareaByEnter = (event) => {
+            const el = event.target;
+            const val = el.value;
+            const lineCount = (val.match(/\n/g) || []).length + 1;
+            
+            if (lineCount <= 1) {
+              el.style.height = '32px';
+            } else {
+              el.style.height = 'auto';
+              el.style.height = Math.max(32, el.scrollHeight) + 'px';
+            }
+          };
+
+          const addStandaloneGirl = () => {
+            masterGirls.value.push({ name: "", type: "", memo: "" });
+            saveData();
+          };
+
+          const removeStandaloneGirlOriginalIndex = (item) => {
+            const idx = masterGirls.value.indexOf(item);
+            if (idx > -1) {
+              masterGirls.value.splice(idx, 1);
+              saveData();
+            }
+          };
+
+          const addStandaloneCustomer = () => {
+            masterCustomers.value.push({ name: "", type: "", memo: "" });
+            saveData();
+          };
+
+          const removeStandaloneCustomerOriginalIndex = (item) => {
+            const idx = masterCustomers.value.indexOf(item);
+            if (idx > -1) {
+              masterCustomers.value.splice(idx, 1);
+              saveData();
+            }
+          };
+
+          const addRoomCard = () => {
+            currentDayData.value.rooms.push({
+              _id: Date.now() + Math.random(),
+              no: "1T", customer: "", rtChecked: false, motelFee: 0, motelQty: 1, drinkType: "12년", drinkQty: 1, price: 0, payMethod: "현금", price2: 0, payMethod2: "카드", note: "", girls: []
+            });
+            saveData();
+          };
+
+          const deleteRoom = (roomWrap) => {
+            if (confirm('이 방의 기록을 삭제하시겠습니까?')) {
+              const targetDate = roomWrap._date || selectedDate.value;
+              if (db.value[targetDate] && db.value[targetDate].rooms) {
+                db.value[targetDate].rooms = db.value[targetDate].rooms.filter(r => r !== roomWrap._originalRef);
+                saveData();
+              }
+            }
+          };
+
+          const addGirl = (roomObj) => {
+            if (!roomObj.girls) roomObj.girls = [];
+            roomObj.girls.push({ name: "", office: "거성", tc: "1H", tc2: "", checked: false });
+            saveData();
+          };
+
+          const removeGirl = (roomObj, gIdx) => {
+            roomObj.girls.splice(gIdx, 1);
+            saveData();
+          };
+
+          const filteredRooms = computed(() => {
+            const q = searchQuery.value.toLowerCase().trim();
+            if (!q) {
+              return currentDayData.value.rooms.map(r => {
+                if (!r.payMethod2) r.payMethod2 = '카드';
+                return { _date: selectedDate.value, _originalRef: r };
+              });
+            }
+
+            let results = [];
+            Object.keys(db.value).forEach(dateKey => {
+              const dayObj = db.value[dateKey];
+              if (dayObj && dayObj.rooms) {
+                dayObj.rooms.forEach(r => {
+                  if (!r.payMethod2) r.payMethod2 = '카드';
+                  const match = 
+                    (r.customer && r.customer.toLowerCase().includes(q)) ||
+                    (r.drinkType && r.drinkType.toLowerCase().includes(q)) ||
+                    (r.no && r.no.toLowerCase().includes(q)) ||
+                    (r.note && r.note.toLowerCase().includes(q)) ||
+                    (r.girls && r.girls.some(g => (g.name && g.name.toLowerCase().includes(q)) || (g.office && g.office.toLowerCase().includes(q))));
+                  
+                  if (match) {
+                    results.push({ _date: dateKey, _originalRef: r });
+                  }
+                });
+              }
+            });
+            return results;
+          });
+
+          const filteredGirls = computed(() => {
+            const q = searchQuery.value.toLowerCase().trim();
+            let list = [...masterGirls.value];
+            
+            list.sort((a, b) => {
+              if (!a.name) return 1;
+              if (!b.name) return -1;
+              return a.name.localeCompare(b.name, 'ko');
+            });
+
+            if (!q) return list;
+            return list.filter(g => 
+              (g.name && g.name.toLowerCase().includes(q)) || 
+              (g.memo && g.memo.toLowerCase().includes(q)) ||
+              (g.type && g.type.toLowerCase().includes(q))
+            );
+          });
+
+          const filteredCustomers = computed(() => {
+            const q = searchQuery.value.toLowerCase().trim();
+            let list = [...masterCustomers.value];
+
+            list.sort((a, b) => {
+              if (!a.name) return 1;
+              if (!b.name) return -1;
+              return a.name.localeCompare(b.name, 'ko');
+            });
+
+            if (!q) return list;
+            return list.filter(c => 
+              (c.name && c.name.toLowerCase().includes(q)) || 
+              (c.memo && c.memo.toLowerCase().includes(q)) ||
+              (c.type && c.type.toLowerCase().includes(q))
+            );
+          });
+
+          const todayTotalDrinks = computed(() => {
+            let total = 0;
+            currentDayData.value.rooms.forEach(r => {
+              total += Number(r.drinkQty) || 0;
+            });
+            return total;
+          });
+
+          const monthTotalDrinks = computed(() => {
+            const currentYearMonth = `${calendarYear.value}-${String(calendarMonth.value + 1).padStart(2, '0')}`;
+            let monthTotal = 0;
+
+            Object.keys(db.value).forEach(dateKey => {
+              if (dateKey.startsWith(currentYearMonth)) {
+                const dayObj = db.value[dateKey];
+                if (dayObj && dayObj.rooms) {
+                  dayObj.rooms.forEach(r => {
+                    monthTotal += Number(r.drinkQty) || 0;
+                  });
+                }
+              }
+            });
+            return monthTotal;
+          });
+
+          const dailyRoomCountMap = computed(() => {
+            const map = {};
+            Object.keys(db.value).forEach(dateKey => {
+              const dayObj = db.value[dateKey];
+              if (dayObj && dayObj.rooms && dayObj.rooms.length > 0) {
+                map[dateKey] = dayObj.rooms.length;
+              }
+            });
+            return map;
+          });
+
+          const calendarDays = computed(() => {
+            const year = calendarYear.value, month = calendarMonth.value;
+            const firstDay = new Date(year, month, 1).getDay();
+            const lastDate = new Date(year, month + 1, 0).getDate();
+            const prevLastDate = new Date(year, month, 0).getDate();
+            const days = [];
+
+            for (let i = firstDay - 1; i >= 0; i--) days.push({ dayNum: prevLastDate - i, isCurrentMonth: false, dateStr: '' });
+            for (let i = 1; i <= lastDate; i++) {
+              const mStr = String(month + 1).padStart(2, '0'), dStr = String(i).padStart(2, '0');
+              days.push({ dayNum: i, isCurrentMonth: true, dateStr: `${year}-${mStr}-${dStr}` });
+            }
+            const rem = (7 - (days.length % 7)) % 7;
+            for (let i = 1; i <= rem; i++) days.push({ dayNum: i, isCurrentMonth: false, dateStr: '' });
+            return days;
+          });
+
+          const prevMonth = () => calendarMonth.value === 0 ? (calendarMonth.value = 11, calendarYear.value--) : calendarMonth.value--;
+          const nextMonth = () => calendarMonth.value === 11 ? (calendarMonth.value = 0, calendarYear.value++) : calendarMonth.value++;
+
+          const selectDateFromCalendar = (dateStr) => {
+            selectedDate.value = dateStr;
+            initDateData(dateStr);
+            searchQuery.value = '';
+          };
+
+          const exportJSON = () => {
+            const exportObj = {
+              db: db.value,
+              masterGirls: masterGirls.value,
+              masterCustomers: masterCustomers.value
+            };
+            const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `bar_jangbu_backup_${new Date().toISOString().substring(0,10)}.json`;
+            a.click();
+          };
+
+          return {
+            theme, setTheme, selectedDate, searchQuery, currentDayData, saveData, addRoomCard, deleteRoom, addGirl, removeGirl, filteredRooms, filteredGirls, filteredCustomers,
+            todayTotalDrinks, monthTotalDrinks, calendarYear, calendarMonth, calendarDays, dailyRoomCountMap, prevMonth, nextMonth, selectDateFromCalendar, exportJSON, resizeTextarea, resizeTextareaByEnter, calculateGirlFee, calculateRoomTotalCash, calculateRoomTotalCard, formatKoreanFee,
+            addStandaloneGirl, removeStandaloneGirlOriginalIndex, addStandaloneCustomer, removeStandaloneCustomerOriginalIndex, totalAutoCash, totalAutoCard,
+            isLoggedIn, authError, authForm, handleLogin, handleLogout
+          };
+        }
+      }).mount('#app');
+    });
+  </script>
+</body>
+</html>

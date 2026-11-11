@@ -19,6 +19,8 @@
   </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <!-- 🌟 Supabase 연동을 위한 라이브러리 추가 -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     tailwind.config = {
       darkMode: 'class',
@@ -70,7 +72,6 @@
             <input type="password" v-model="authForm.password" required placeholder="비밀번호 입력" class="w-full p-2.5 rounded-lg bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-zinc-800 dark:text-zinc-100 outline-none focus:border-accent text-sm">
           </div>
 
-          <!-- 아이디 저장 체크박스 -->
           <div class="flex items-center gap-2 pt-1">
             <input type="checkbox" id="rememberId" v-model="authForm.rememberId" class="w-4 h-4 accent-accent cursor-pointer rounded">
             <label for="rememberId" class="text-xs text-zinc-400 cursor-pointer select-none">아이디 저장</label>
@@ -90,7 +91,7 @@
     <!-- 🌟 로그인 성공 시 열리는 메인 장부 UI -->
     <template v-else>
       
-      <!-- 📌 우측(또는 좌측) 고정 방 번호 퀵 내비게이터 바 -->
+      <!-- 방 번호 퀵 내비게이터 바 -->
       <aside class="fixed right-3 top-1/2 -translate-y-1/2 z-40 hidden sm:flex flex-col gap-1 bg-white/80 dark:bg-darkCard/90 backdrop-blur border border-zinc-200 dark:border-darkBorder p-1.5 rounded-xl shadow-xl max-h-[70vh] overflow-y-auto">
         <span class="text-[9px] font-bold text-center text-zinc-400 pb-1 border-b border-zinc-200 dark:border-darkBorder">방 이동</span>
         <button v-for="(item, idx) in roomQuickNavList" :key="idx" 
@@ -108,10 +109,10 @@
           <h1 class="text-lg sm:text-xl font-bold tracking-wide flex items-center gap-2">
             <span>🍸 장부</span>
             <span class="text-xs text-accent bg-accent/10 px-2 py-0.5 rounded font-mono">{{ selectedDate }}</span>
+            <span v-if="syncStatus" class="text-[10px] text-zinc-400 font-normal">({{ syncStatus }})</span>
           </h1>
         </div>
 
-        <!-- 상단 중앙 운수 대통 배너 -->
         <div class="bg-zinc-200/70 dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder px-6 py-1.5 rounded-lg shadow-inner">
           <span class="text-sm sm:text-base font-bold tracking-widest text-customOrange font-mono">- 운수 대통 -</span>
         </div>
@@ -209,7 +210,7 @@
           <span class="text-xs font-bold text-zinc-400 tracking-wider">
             {{ searchQuery.trim() ? `🔍 테이블 검색 결과 (${filteredRooms.length}건)` : `ROOMS / TABLES (${selectedDate} 영업 테이블)` }}
           </span>
-          <span class="text-xs text-zinc-500">* 항목을 수정하면 실시간 반영 및 저장됩니다.</span>
+          <span class="text-xs text-zinc-500">* 항목을 수정하면 실시간 클라우드에 반영 및 저장됩니다.</span>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -258,7 +259,6 @@
                     </div>
                   </div>
 
-                  <!-- 모텔비 수량 선택 -->
                   <div v-if="roomWrap._originalRef.motelFee > 0" class="flex items-center justify-between pt-1 border-t border-zinc-200 dark:border-zinc-800">
                     <span class="text-[10px] text-zinc-400">모텔 횟수(개수):</span>
                     <select v-model.number="roomWrap._originalRef.motelQty" @change="saveData" class="p-0.5 px-1.5 rounded bg-white dark:bg-[#222] border border-zinc-300 dark:border-darkBorder text-accent font-bold text-[11px] outline-none">
@@ -267,7 +267,7 @@
                   </div>
                 </div>
 
-                <!-- 🌟 [추가 기능] 현금 빌려감 / 팁 입력 영역 -->
+                <!-- 현금 빌려감 / 팁 입력 영역 -->
                 <div class="flex flex-col gap-1.5 bg-zinc-50 dark:bg-[#1a1a1a] p-2 rounded border border-zinc-200 dark:border-darkBorder">
                   <div class="flex items-center justify-between">
                     <span class="text-[10px] font-bold text-customOrange">추가 항목 (현금/팁)</span>
@@ -313,7 +313,6 @@
                   <div class="space-y-1.5 pr-0">
                     <div v-for="(g, gIdx) in roomWrap._originalRef.girls" :key="gIdx" class="flex gap-1 items-center min-w-0">
                       
-                      <!-- 빨간색 M 글자 및 체크박스 -->
                       <div class="flex items-center gap-0.5 shrink-0 px-0.5">
                         <span class="text-[11px] font-bold text-rose-500">M</span>
                         <input type="checkbox" v-model="g.checked" @change="saveData" class="w-3.5 h-3.5 accent-rose-500 cursor-pointer">
@@ -321,7 +320,6 @@
 
                       <input type="text" v-model="g.name" @input="saveData" placeholder="이름" class="w-[16%] min-w-0 px-1 py-1 text-xs rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-darkBorder text-zinc-100 outline-none">
                       
-                      <!-- 🌟 사무실 기본 선택값 수정 반영 -->
                       <select v-model="g.office" @change="saveData" class="w-[23%] min-w-0 px-0.5 py-1 text-[11px] rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-darkBorder text-customOrange font-semibold outline-none">
                         <option value="사무실">사무실</option>
                         <option value="거성">거성</option>
@@ -378,7 +376,6 @@
 
             </div>
 
-            <!-- 방 하단 총 합계 금액 분리 표시 (현금가 / 카드가) & 결제금액 1, 2 입력 -->
             <div class="bg-zinc-100 dark:bg-[#181818] p-2.5 rounded-lg border border-zinc-200 dark:border-darkBorder space-y-2 text-xs">
               <div class="grid grid-cols-2 gap-2">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between bg-zinc-200/50 dark:bg-[#222] p-2 rounded border border-zinc-300 dark:border-zinc-700/60">
@@ -395,7 +392,6 @@
                 </div>
               </div>
 
-              <!-- 결제금액 1, 2 입력 영역 -->
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-zinc-200 dark:border-zinc-800">
                 <div>
                   <label class="block text-[10px] text-zinc-400 mb-0.5">결제금액 1 (₩)</label>
@@ -421,7 +417,6 @@
               </div>
             </div>
 
-            <!-- 특이사항 / 메모 영역 -->
             <div class="pt-2 border-t border-zinc-200 dark:border-darkBorder/60">
               <label class="block text-[10px] text-zinc-400 mb-1 font-semibold">📝 특이사항 / 메모</label>
               <textarea v-model="roomWrap._originalRef.note" @input="resizeTextarea($event); saveData()" ref="noteAreas" placeholder="내용을 입력하세요..." class="w-full p-2 text-xs rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-darkBorder text-zinc-200 outline-none focus:border-accent min-h-[42px] leading-relaxed"></textarea>
@@ -551,10 +546,15 @@
 
   <script>
     window.addEventListener('DOMContentLoaded', () => {
-      const { createApp, ref, computed } = Vue;
+      // 🌟 매매일지와 동일한 Supabase 프로젝트 연동 설정
+      const SUPABASE_URL = 'https://ickxgwkvkcgrehufmwut.supabase.co';
+      const SUPABASE_KEY = 'sb_publishable_GLv8OIRpMqaI80yBdGng_w_Bh6Wxgqr';
+      const { createApp, ref, computed, onMounted } = Vue;
 
       createApp({
         setup() {
+          const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
           const theme = ref(localStorage.getItem('bar_theme') || 'dark');
           const setTheme = (mode) => {
             theme.value = mode;
@@ -566,12 +566,12 @@
             }
           };
 
-          // 🔑 고정 로그인 시스템 & 아이디 저장 기능
           const ALLOWED_ID = '고구려';
           const ALLOWED_PW = '1238';
 
           const isLoggedIn = ref(localStorage.getItem('bar_is_logged_in') === 'true');
           const authError = ref('');
+          const syncStatus = ref('동기화 대기중');
           
           const savedId = localStorage.getItem('bar_remembered_id') || '';
           const authForm = ref({
@@ -596,6 +596,7 @@
               }
 
               authForm.value.password = '';
+              fetchCloudData(); // 로그인 성공 시 클라우드 데이터 로드
             } else {
               authError.value = '아이디 또는 비밀번호가 일치하지 않습니다.';
             }
@@ -612,23 +613,85 @@
             };
           };
 
-          // 📊 장부 데이터 로드 & 저장
-          const savedDb = localStorage.getItem('bar_trade_journal_db_v47');
-          const db = ref(savedDb ? JSON.parse(savedDb) : {});
+          // 🌟 장부 데이터 상태 (클라우드 동기화형)
+          const db = ref({});
+          const masterGirls = ref([]);
+          const masterCustomers = ref([]);
 
-          const savedMasterGirls = localStorage.getItem('bar_master_girls_v1');
-          const masterGirls = ref(savedMasterGirls ? JSON.parse(savedMasterGirls) : []);
+          // 🌟 Supabase 클라우드에서 데이터 불러오기
+          const fetchCloudData = async () => {
+            try {
+              syncStatus.value = '불러오는 중...';
+              const { data, error } = await supabaseClient
+                .from('app_storage')
+                .select('*')
+                .eq('key', 'bar_jangbu_cloud_data')
+                .single();
 
-          const savedMasterCustomers = localStorage.getItem('bar_master_customers_v1');
-          const masterCustomers = ref(savedMasterCustomers ? JSON.parse(savedMasterCustomers) : []);
+              if (data && data.value) {
+                db.value = data.value.db || {};
+                masterGirls.value = data.value.masterGirls || [];
+                masterCustomers.value = data.value.masterCustomers || [];
+                syncStatus.value = '동기화 완료 ✅';
+              } else {
+                // 데이터가 아직 없으면 초기 빈값 세팅
+                db.value = {};
+                masterGirls.value = [];
+                masterCustomers.value = [];
+                syncStatus.value = '새 데이터 준비됨';
+              }
+            } catch (err) {
+              syncStatus.value = '동기화 오류 (오프라인 모드)';
+              // 네트워크 오류 시 로컬 데이터 백업본이라도 불러오기
+              const savedDb = localStorage.getItem('bar_trade_journal_db_v47');
+              if (savedDb) db.value = JSON.parse(savedDb);
+            }
+          };
 
+          // 🌟 Supabase 클라우드에 실시간 저장하기
+          let saveTimeout = null;
           const saveData = () => {
+            // 로컬 스토리지에도 비상용으로 동시 백업
             localStorage.setItem('bar_trade_journal_db_v47', JSON.stringify(db.value));
             localStorage.setItem('bar_master_girls_v1', JSON.stringify(masterGirls.value));
             localStorage.setItem('bar_master_customers_v1', JSON.stringify(masterCustomers.value));
+
+            // 서버 과부하 방지 디바운스 적용 (타이핑/클릭 멈추면 1초 뒤 클라우드 전송)
+            syncStatus.value = '저장 중...';
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(async () => {
+              try {
+                const payload = {
+                  key: 'bar_jangbu_cloud_data',
+                  value: {
+                    db: db.value,
+                    masterGirls: masterGirls.value,
+                    masterCustomers: masterCustomers.value
+                  },
+                  updated_at: new Date().toISOString()
+                };
+
+                const { error } = await supabaseClient
+                  .from('app_storage')
+                  .upsert(payload, { onConflict: 'key' });
+
+                if (!error) {
+                  syncStatus.value = '저장됨 ✅';
+                } else {
+                  syncStatus.value = '저장 실패 ❌';
+                }
+              } catch (e) {
+                syncStatus.value = '네트워크 불안정';
+              }
+            }, 1000);
           };
 
-          // 🌟 야간 업종 기준 (아침 7시 이전이면 전날 날짜로 계산)
+          onMounted(() => {
+            if (isLoggedIn.value) {
+              fetchCloudData();
+            }
+          });
+
           const getCustomDateStr = (targetDate = new Date()) => {
             const hour = targetDate.getHours();
             if (hour < 7) {
@@ -829,7 +892,6 @@
             }
           };
 
-          // 🌟 접대원 추가 시 기본 사무실이 '사무실'로 되도록 수정
           const addGirl = (roomObj) => {
             if (!roomObj.girls) roomObj.girls = [];
             roomObj.girls.push({ name: "", office: "사무실", tc: "1H", tc2: "", checked: false });
@@ -872,7 +934,6 @@
             return results;
           });
 
-          // 🌟 [추가 기능] 동일 방 번호 순차 순환 이동 구현을 위한 상태 관리
           const lastJumpNo = ref('');
           const lastJumpIndex = ref(-1);
 
@@ -880,7 +941,6 @@
             const list = filteredRooms.value;
             const targetNo = roomObj.no;
 
-            // 같은 번호 버튼을 연속으로 누르는 경우 다음 동일 방 번호로 인덱스 순환
             let nextIndex = -1;
             if (lastJumpNo.value === targetNo) {
               const matchingIndices = [];
@@ -896,7 +956,6 @@
                 nextIndex = currentFilteredIndex;
               }
             } else {
-              // 처음 누르거나 다른 방 번호인 경우 해당 번호의 첫 번째 방 찾기
               const foundIdx = list.findIndex(item => item._originalRef === roomObj);
               nextIndex = foundIdx !== -1 ? foundIdx : currentFilteredIndex;
             }
@@ -914,7 +973,6 @@
             }
           };
 
-          // 퀵 내비게이터에 표시할 당일 방 목록 매핑
           const roomQuickNavList = computed(() => {
             return filteredRooms.value.map((item, idx) => ({
               roomRef: item._originalRef,
@@ -1038,7 +1096,7 @@
             todayTotalDrinks, monthTotalDrinks, calendarYear, calendarMonth, calendarDays, dailyRoomCountMap, prevMonth, nextMonth, selectDateFromCalendar, exportJSON, resizeTextarea, resizeTextareaByEnter, calculateGirlFee, calculateRoomTotalCash, calculateRoomTotalCard, formatKoreanFee,
             addStandaloneGirl, removeStandaloneGirlOriginalIndex, addStandaloneCustomer, removeStandaloneCustomerOriginalIndex, totalAutoCash, totalAutoCard,
             isLoggedIn, authError, authForm, handleLogin, handleLogout,
-            roomQuickNavList, jumpToRoom
+            roomQuickNavList, jumpToRoom, syncStatus
           };
         }
       }).mount('#app');

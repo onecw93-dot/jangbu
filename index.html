@@ -19,7 +19,6 @@
   </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-  <!-- 🌟 Supabase 연동을 위한 라이브러리 추가 -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     tailwind.config = {
@@ -131,10 +130,10 @@
         </div>
       </header>
 
-      <!-- 상단 영역: 왼쪽 캘린더 / 오른쪽 요약 통계 카드 -->
+      <!-- 상단 영역: 월별 캘린더 & 요약 카드 -->
       <section class="grid grid-cols-1 md:grid-cols-12 gap-4 items-stretch">
         
-        <!-- 왼쪽: 월별 캘린더 -->
+        <!-- 월별 캘린더 -->
         <div class="md:col-span-7 bg-white dark:bg-darkCard border border-zinc-200 dark:border-darkBorder p-3 sm:p-4 rounded-xl shadow-sm space-y-2.5 flex flex-col justify-between">
           <div class="flex justify-between items-center pb-2 border-b border-zinc-200 dark:border-darkBorder">
             <div class="flex items-center gap-2">
@@ -173,7 +172,7 @@
           </div>
         </div>
 
-        <!-- 오른쪽: 요약 통계 카드들 -->
+        <!-- 통계 카드 -->
         <div class="md:col-span-5 flex flex-col justify-between gap-3">
           <div class="bg-white dark:bg-darkCard border border-zinc-200 dark:border-darkBorder p-4 rounded-xl shadow-sm flex flex-col justify-center space-y-3 flex-1">
             <div class="flex items-center justify-between border-b border-zinc-200 dark:border-darkBorder pb-2">
@@ -234,14 +233,14 @@
 
             <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 text-xs">
               
-              <!-- 왼쪽 컬럼: 손님, 옵션(RT / 모텔비/수량), 현금빌려감/팁, 술/수량 -->
+              <!-- 왼쪽 컬럼: 손님, 옵션(RT / 모텔비/수량), 현금빌려감/팁, 술/수량/서비스 -->
               <div class="sm:col-span-5 space-y-2">
                 <div>
                   <label class="block text-[10px] text-zinc-400 mb-0.5">손님</label>
                   <input type="text" v-model="roomWrap._originalRef.customer" @input="saveData" placeholder="손님 이름 / 특징" class="w-full p-2 rounded bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-darkBorder text-zinc-100 outline-none focus:border-accent">
                 </div>
 
-                <!-- RT 체크 및 모텔비 단가 + 수량 선택 영역 -->
+                <!-- RT 체크 및 모텔비 -->
                 <div class="flex flex-col gap-1.5 bg-zinc-50 dark:bg-[#1a1a1a] p-2 rounded border border-zinc-200 dark:border-darkBorder">
                   <div class="flex items-center justify-between">
                     <label class="flex items-center gap-1 cursor-pointer select-none">
@@ -267,7 +266,7 @@
                   </div>
                 </div>
 
-                <!-- 현금 빌려감 / 팁 입력 영역 -->
+                <!-- 현금 빌려감 / 팁 -->
                 <div class="flex flex-col gap-1.5 bg-zinc-50 dark:bg-[#1a1a1a] p-2 rounded border border-zinc-200 dark:border-darkBorder">
                   <div class="flex items-center justify-between">
                     <span class="text-[10px] font-bold text-customOrange">추가 항목 (현금/팁)</span>
@@ -287,16 +286,28 @@
                   </div>
                 </div>
 
+                <!-- 🌟 [수정] 술 / 수량 / 서비스 수량 차감 선택 -->
                 <div>
-                  <label class="block text-[10px] text-zinc-400 mb-0.5">술 / 수량</label>
-                  <div class="flex gap-1.5">
-                    <select v-model="roomWrap._originalRef.drinkType" @change="saveData" class="flex-1 min-w-[65px] p-1.5 rounded bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-darkBorder text-zinc-100 outline-none text-xs">
+                  <div class="flex justify-between items-center mb-0.5">
+                    <label class="block text-[10px] text-zinc-400">술 / 수량</label>
+                    <span v-if="roomWrap._originalRef.serviceQty > 0" class="text-[10px] text-rose-400 font-bold">
+                      🎁 서비스 {{ roomWrap._originalRef.serviceQty }}병 차감
+                    </span>
+                  </div>
+                  <div class="flex gap-1">
+                    <select v-model="roomWrap._originalRef.drinkType" @change="saveData" class="w-[45%] min-w-0 p-1.5 rounded bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-darkBorder text-zinc-100 outline-none text-xs">
                       <option value="">술 선택</option>
                       <option value="12년">12년</option>
                       <option value="17년">17년</option>
                     </select>
-                    <select v-model.number="roomWrap._originalRef.drinkQty" @change="saveData" class="w-[60px] shrink-0 p-1.5 rounded bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-darkBorder text-accent font-bold outline-none text-xs text-center">
+                    <select v-model.number="roomWrap._originalRef.drinkQty" @change="saveData" class="w-[28%] min-w-0 p-1.5 rounded bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-darkBorder text-accent font-bold outline-none text-xs text-center">
                       <option v-for="n in 12" :key="n" :value="n">{{ n }}병</option>
+                    </select>
+                    <select v-model.number="roomWrap._originalRef.serviceQty" @change="saveData" class="w-[27%] min-w-0 p-1.5 rounded bg-zinc-50 dark:bg-[#1a1a1a] border border-rose-500/50 text-rose-400 font-bold outline-none text-[11px] text-center" title="서비스 술 수량 (금액 차감)">
+                      <option :value="0">S: 0</option>
+                      <option :value="1">S: 1병</option>
+                      <option :value="2">S: 2병</option>
+                      <option :value="3">S: 3병</option>
                     </select>
                   </div>
                 </div>
@@ -376,6 +387,7 @@
 
             </div>
 
+            <!-- 하단 총액 계산 (서비스 차감 자동 적용) -->
             <div class="bg-zinc-100 dark:bg-[#181818] p-2.5 rounded-lg border border-zinc-200 dark:border-darkBorder space-y-2 text-xs">
               <div class="grid grid-cols-2 gap-2">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between bg-zinc-200/50 dark:bg-[#222] p-2 rounded border border-zinc-300 dark:border-zinc-700/60">
@@ -426,7 +438,7 @@
         </div>
       </section>
 
-      <!-- 전체 공통 접대원 & 손님 개별 목록 관리 현황판 -->
+      <!-- 접대원 & 손님 목록 현황판 -->
       <section class="grid grid-cols-1 xl:grid-cols-2 gap-4">
         
         <!-- 왼쪽: 접대원 현황판 -->
@@ -495,7 +507,7 @@
 
       </section>
 
-      <!-- 하단 수기 장부 스타일 매출/매입 정산표 -->
+      <!-- 일일 매출/매입 수기 정산표 -->
       <section class="bg-white dark:bg-darkCard border border-zinc-200 dark:border-darkBorder p-4 sm:p-5 rounded-xl shadow-sm space-y-3">
         <div class="flex justify-between items-center border-b border-zinc-200 dark:border-darkBorder pb-2">
           <h3 class="text-xs font-bold text-zinc-300 tracking-wider">DAILY BALANCE ({{ selectedDate }} 일일 매출 / 매입 수기 정산표)</h3>
@@ -546,7 +558,6 @@
 
   <script>
     window.addEventListener('DOMContentLoaded', () => {
-      // 🌟 매매일지와 동일한 Supabase 프로젝트 연동 설정
       const SUPABASE_URL = 'https://ickxgwkvkcgrehufmwut.supabase.co';
       const SUPABASE_KEY = 'sb_publishable_GLv8OIRpMqaI80yBdGng_w_Bh6Wxgqr';
       const { createApp, ref, computed, onMounted } = Vue;
@@ -596,7 +607,7 @@
               }
 
               authForm.value.password = '';
-              fetchCloudData(); // 로그인 성공 시 클라우드 데이터 로드
+              fetchCloudData();
             } else {
               authError.value = '아이디 또는 비밀번호가 일치하지 않습니다.';
             }
@@ -613,12 +624,10 @@
             };
           };
 
-          // 🌟 장부 데이터 상태 (클라우드 동기화형)
           const db = ref({});
           const masterGirls = ref([]);
           const masterCustomers = ref([]);
 
-          // 🌟 Supabase 클라우드에서 데이터 불러오기
           const fetchCloudData = async () => {
             try {
               syncStatus.value = '불러오는 중...';
@@ -634,7 +643,6 @@
                 masterCustomers.value = data.value.masterCustomers || [];
                 syncStatus.value = '동기화 완료 ✅';
               } else {
-                // 데이터가 아직 없으면 초기 빈값 세팅
                 db.value = {};
                 masterGirls.value = [];
                 masterCustomers.value = [];
@@ -642,21 +650,17 @@
               }
             } catch (err) {
               syncStatus.value = '동기화 오류 (오프라인 모드)';
-              // 네트워크 오류 시 로컬 데이터 백업본이라도 불러오기
               const savedDb = localStorage.getItem('bar_trade_journal_db_v47');
               if (savedDb) db.value = JSON.parse(savedDb);
             }
           };
 
-          // 🌟 Supabase 클라우드에 실시간 저장하기
           let saveTimeout = null;
           const saveData = () => {
-            // 로컬 스토리지에도 비상용으로 동시 백업
             localStorage.setItem('bar_trade_journal_db_v47', JSON.stringify(db.value));
             localStorage.setItem('bar_master_girls_v1', JSON.stringify(masterGirls.value));
             localStorage.setItem('bar_master_customers_v1', JSON.stringify(masterCustomers.value));
 
-            // 서버 과부하 방지 디바운스 적용 (타이핑/클릭 멈추면 1초 뒤 클라우드 전송)
             syncStatus.value = '저장 중...';
             clearTimeout(saveTimeout);
             saveTimeout = setTimeout(async () => {
@@ -793,8 +797,11 @@
             return extra;
           };
 
+          // 🌟 [수정] 서비스 수량 차감 반영된 현금가 계산
           const calculateRoomTotalCash = (r) => {
             const qty = Number(r.drinkQty) || 0;
+            const serviceQty = Number(r.serviceQty) || 0;
+            
             let drinkPrice = 0;
             if (r.drinkType === '12년') drinkPrice = 120000;
             else if (r.drinkType === '17년') drinkPrice = 170000;
@@ -803,11 +810,17 @@
             const motelQty = Number(r.motelQty) || 1;
             const totalMotel = motelUnit * motelQty;
 
-            return (drinkPrice * qty) + getCommonExtraFee(r) + totalMotel;
+            // 총 술 수량 계산 시 서비스 수량만큼 금액 차감
+            const payableQty = Math.max(0, qty - serviceQty);
+
+            return (drinkPrice * payableQty) + getCommonExtraFee(r) + totalMotel;
           };
 
+          // 🌟 [수정] 서비스 수량 차감 반영된 카드가 계산
           const calculateRoomTotalCard = (r) => {
             const qty = Number(r.drinkQty) || 0;
+            const serviceQty = Number(r.serviceQty) || 0;
+
             let drinkPrice = 0;
             if (r.drinkType === '12년') drinkPrice = 150000;
             else if (r.drinkType === '17년') drinkPrice = 200000;
@@ -816,7 +829,9 @@
             const motelQty = Number(r.motelQty) || 1;
             const totalMotel = motelUnit * motelQty;
 
-            return (drinkPrice * qty) + getCommonExtraFee(r) + totalMotel;
+            const payableQty = Math.max(0, qty - serviceQty);
+
+            return (drinkPrice * payableQty) + getCommonExtraFee(r) + totalMotel;
           };
 
           const formatKoreanFee = (amount) => {
@@ -877,7 +892,7 @@
           const addRoomCard = () => {
             currentDayData.value.rooms.push({
               _id: Date.now() + Math.random(),
-              no: "1T", customer: "", rtChecked: false, motelFee: 0, motelQty: 1, extraType: "", extraAmount: 0, drinkType: "12년", drinkQty: 1, price: 0, payMethod: "현금", price2: 0, payMethod2: "카드", note: "", girls: []
+              no: "1T", customer: "", rtChecked: false, motelFee: 0, motelQty: 1, extraType: "", extraAmount: 0, drinkType: "12년", drinkQty: 1, serviceQty: 0, price: 0, payMethod: "현금", price2: 0, payMethod2: "카드", note: "", girls: []
             });
             saveData();
           };
@@ -908,6 +923,7 @@
             if (!q) {
               return currentDayData.value.rooms.map(r => {
                 if (!r.payMethod2) r.payMethod2 = '카드';
+                if (r.serviceQty === undefined) r.serviceQty = 0;
                 return { _date: selectedDate.value, _originalRef: r };
               });
             }
@@ -918,6 +934,7 @@
               if (dayObj && dayObj.rooms) {
                 dayObj.rooms.forEach(r => {
                   if (!r.payMethod2) r.payMethod2 = '카드';
+                  if (r.serviceQty === undefined) r.serviceQty = 0;
                   const match = 
                     (r.customer && r.customer.toLowerCase().includes(q)) ||
                     (r.drinkType && r.drinkType.toLowerCase().includes(q)) ||

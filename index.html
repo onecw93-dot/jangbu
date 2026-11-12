@@ -87,12 +87,47 @@
       </div>
     </div>
 
+    <!-- 🖼️ 접대원 프로필 이미지 크게 보기 모달 -->
+    <div v-if="previewGirl" @click.self="closePhotoModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="bg-white dark:bg-darkCard border border-zinc-200 dark:border-darkBorder p-4 sm:p-5 rounded-2xl shadow-2xl max-w-md w-full space-y-4">
+        <div class="flex justify-between items-center border-b border-zinc-200 dark:border-darkBorder pb-2.5">
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-sm sm:text-base text-customOrange">{{ previewGirl.name || '이름 미입력' }}</span>
+            <span class="text-xs bg-zinc-200 dark:bg-zinc-800 px-2 py-0.5 rounded text-zinc-500 dark:text-zinc-400">{{ previewGirl.office || '사무실' }}</span>
+          </div>
+          <button @click="closePhotoModal" class="text-zinc-400 hover:text-zinc-100 text-lg font-bold px-2">✕</button>
+        </div>
+
+        <div class="flex justify-center items-center bg-zinc-100 dark:bg-[#161616] rounded-xl overflow-hidden min-h-[260px] max-h-[65vh]">
+          <img v-if="previewGirl.photoUrl" :src="previewGirl.photoUrl" alt="프로필 확대 이미지" class="max-w-full max-h-[65vh] object-contain">
+          <div v-else class="text-xs text-zinc-500 py-16">등록된 이미지가 없습니다.</div>
+        </div>
+
+        <div class="flex justify-between items-center gap-2 pt-1">
+          <label class="flex-1 text-center py-2.5 px-3 bg-accent hover:bg-accentHover text-zinc-950 font-bold rounded-lg text-xs cursor-pointer transition">
+            📷 사진 변경 / 업로드
+            <input type="file" accept="image/*" class="hidden" @change="handlePhotoUpload($event, previewGirl)">
+          </label>
+          <button v-if="previewGirl.photoUrl" @click="removeGirlPhoto(previewGirl)" class="py-2.5 px-3 bg-rose-500/15 hover:bg-rose-500/25 text-rose-500 font-bold rounded-lg text-xs transition">
+            사진 삭제
+          </button>
+          <button @click="closePhotoModal" class="py-2.5 px-4 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 font-bold rounded-lg text-xs transition">
+            닫기
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- 🌟 로그인 성공 시 열리는 메인 장부 UI -->
     <template v-else>
       
       <!-- 📱 모바일 & PC 겸용 방 번호 퀵 내비게이터 바 (왼쪽 끝 고정) -->
-      <aside class="fixed left-1 sm:left-3 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-1 bg-white/85 dark:bg-darkCard/85 backdrop-blur-md border border-zinc-300 dark:border-darkBorder p-1 sm:p-1.5 rounded-xl shadow-xl max-h-[65vh] overflow-y-auto">
-        <span class="text-[8px] sm:text-[9px] font-bold text-center text-zinc-400 pb-0.5 sm:pb-1 border-b border-zinc-200 dark:border-darkBorder">이동</span>
+      <aside class="fixed left-1 sm:left-3 top-1/2 -translate-y-1/2 z-40 flex flex-col items-center gap-1 bg-white/85 dark:bg-darkCard/85 backdrop-blur-md border border-zinc-300 dark:border-darkBorder p-1 sm:p-1.5 rounded-xl shadow-xl max-h-[65vh] overflow-y-auto">
+        <button @click="addRoomCard()" class="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-accent hover:bg-accentHover text-zinc-950 font-extrabold text-xs sm:text-sm flex items-center justify-center transition shadow-sm shrink-0" title="방 추가">
+          +
+        </button>
+        <span class="text-[8px] sm:text-[9px] font-bold text-center text-zinc-400 py-0.5 w-full border-y border-zinc-200 dark:border-darkBorder">이동</span>
+        
         <button v-for="(item, idx) in roomQuickNavList" :key="idx" 
                 @click="jumpToRoom(item.roomRef, item.index)"
                 class="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-zinc-100 dark:bg-[#202020] hover:bg-accent hover:text-zinc-950 active:bg-accent active:text-zinc-950 text-[10px] sm:text-xs font-mono font-bold text-zinc-700 dark:text-zinc-200 transition flex items-center justify-center border border-zinc-200 dark:border-darkBorder shrink-0"
@@ -299,6 +334,7 @@
                       <option value="">술 선택</option>
                       <option value="12년">12년</option>
                       <option value="17년">17년</option>
+                      <option value="소맥">소맥</option>
                     </select>
                     <select v-model.number="roomWrap._originalRef.drinkQty" @change="saveData" class="w-[28%] min-w-0 p-1.5 rounded bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-darkBorder text-accent font-bold outline-none text-xs text-center">
                       <option v-for="n in 12" :key="n" :value="n">{{ n }}병</option>
@@ -334,6 +370,7 @@
                       <select v-model="g.office" @change="saveData" class="w-[23%] min-w-0 px-0.5 py-1 text-[11px] rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-darkBorder text-customOrange font-semibold outline-none">
                         <option value="사무실">사무실</option>
                         <option value="거성">거성</option>
+                        <option value="대한">대한</option>
                         <option value="비비">비비</option>
                         <option value="여우">여우</option>
                         <option value="타임">타임</option>
@@ -387,7 +424,7 @@
 
             </div>
 
-            <!-- 하단 총액 계산 (현금/팁 추가 금액 + 서비스 차감 자동 적용) -->
+            <!-- 하단 총액 계산 -->
             <div class="bg-zinc-100 dark:bg-[#181818] p-2.5 rounded-lg border border-zinc-200 dark:border-darkBorder space-y-2 text-xs">
               <div class="grid grid-cols-2 gap-2">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between bg-zinc-200/50 dark:bg-[#222] p-2 rounded border border-zinc-300 dark:border-zinc-700/60">
@@ -441,7 +478,7 @@
       <!-- 접대원 & 손님 목록 현황판 -->
       <section class="grid grid-cols-1 xl:grid-cols-2 gap-4">
         
-        <!-- 왼쪽: 접대원 현황판 (사무실 드롭다운 추가됨) -->
+        <!-- 왼쪽: 접대원 현황판 -->
         <div class="bg-white dark:bg-darkCard border border-zinc-200 dark:border-darkBorder p-4 sm:p-5 rounded-xl shadow-sm space-y-3 flex flex-col justify-between" v-show="!searchQuery.trim() || filteredGirls.length > 0">
           <div>
             <div class="flex justify-between items-center pb-2 border-b border-zinc-200 dark:border-darkBorder mb-3">
@@ -454,13 +491,28 @@
               </button>
             </div>
 
-            <div class="space-y-3">
-              <div v-for="(sg, sgIdx) in filteredGirls" :key="sgIdx" class="bg-zinc-50 dark:bg-[#202020] border border-zinc-200 dark:border-darkBorder p-2.5 sm:p-3 rounded-lg flex items-center gap-1.5 sm:gap-2">
-                <input type="text" v-model="sg.name" @input="saveData" placeholder="이름" class="w-[16%] min-w-[52px] p-1.5 sm:p-2 text-xs rounded bg-white dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-zinc-100 outline-none font-semibold">
+            <div class="space-y-2">
+              <!-- key 값으로 고유 id 사용 (타이핑 시 DOM 꼬임 방지) -->
+              <div v-for="sg in displayedGirls" :key="sg.id" class="bg-zinc-50 dark:bg-[#202020] border border-zinc-200 dark:border-darkBorder py-1.5 px-2.5 rounded-lg flex items-center gap-1.5 sm:gap-2">
                 
-                <select v-model="sg.office" @change="saveData" class="w-[19%] min-w-[62px] p-1.5 sm:p-2 text-xs rounded bg-white dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-customOrange font-semibold outline-none text-center">
+                <!-- 📸 프로필 이미지 썸네일 / 업로드 버튼 -->
+                <div class="shrink-0 relative flex items-center">
+                  <button v-if="sg.photoUrl" @click="openPhotoModal(sg)" type="button" class="w-7 h-7 rounded-full overflow-hidden border border-customOrange/70 hover:ring-2 hover:ring-accent transition block" title="클릭 시 크게 보기">
+                    <img :src="sg.photoUrl" alt="프로필" class="w-full h-full object-cover">
+                  </button>
+                  <label v-else class="w-7 h-7 rounded-full bg-zinc-200 dark:bg-[#1a1a1a] border border-dashed border-zinc-400 dark:border-zinc-600 hover:border-accent flex items-center justify-center cursor-pointer text-zinc-400 hover:text-accent transition" title="사진 업로드">
+                    <span v-if="sg.isUploading" class="text-[9px] font-bold animate-pulse">...</span>
+                    <span v-else class="text-[10px]">📷</span>
+                    <input type="file" accept="image/*" class="hidden" @change="handlePhotoUpload($event, sg)">
+                  </label>
+                </div>
+
+                <input type="text" v-model="sg.name" @input="saveData" placeholder="이름" class="w-[15%] min-w-[48px] p-1 text-xs rounded bg-white dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-zinc-100 outline-none font-semibold">
+                
+                <select v-model="sg.office" @change="saveData" class="w-[18%] min-w-[58px] p-1 text-xs rounded bg-white dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-customOrange font-semibold outline-none text-center">
                   <option value="사무실">사무실</option>
                   <option value="거성">거성</option>
+                  <option value="대한">대한</option>
                   <option value="비비">비비</option>
                   <option value="여우">여우</option>
                   <option value="타임">타임</option>
@@ -470,20 +522,27 @@
                   <option value="퀸">퀸</option>
                 </select>
 
-                <select v-model="sg.type" @change="saveData" class="w-[16%] min-w-[54px] p-1.5 sm:p-2 text-xs rounded bg-white dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-accent font-bold outline-none text-center">
+                <select v-model="sg.type" @change="saveData" class="w-[15%] min-w-[50px] p-1 text-xs rounded bg-white dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-accent font-bold outline-none text-center">
                   <option value="">선택</option>
                   <option value="시간">시간</option>
                   <option value="개인">개인</option>
                 </select>
 
-                <textarea v-model="sg.memo" @input="resizeTextareaByEnter($event); saveData()" placeholder="메모" class="flex-1 min-w-0 px-2 py-1.5 text-xs rounded bg-white dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-zinc-200 outline-none leading-relaxed h-[32px]"></textarea>
+                <textarea v-model="sg.memo" @input="resizeTextareaByEnter($event); saveData()" placeholder="메모" class="flex-1 min-w-0 px-2 py-1 text-xs rounded bg-white dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-zinc-200 outline-none leading-relaxed h-[28px]"></textarea>
                 
-                <button @click="removeStandaloneGirlOriginalIndex(sg)" class="text-rose-500 font-bold px-1.5 sm:px-2 py-1.5 text-xs shrink-0 hover:bg-rose-500/10 rounded">삭제</button>
+                <button @click="removeStandaloneGirlOriginalIndex(sg)" class="text-rose-500 font-bold px-1.5 py-1 text-xs shrink-0 hover:bg-rose-500/10 rounded">삭제</button>
               </div>
 
               <div v-if="filteredGirls.length === 0" class="py-6 text-center text-zinc-500 text-xs">
                 등록된 접대원이 없습니다.
               </div>
+            </div>
+
+            <!-- 접기 / 펼치기 버튼 (5명 초과 시) -->
+            <div v-if="filteredGirls.length > 5 && !searchQuery.trim()" class="pt-2 text-center">
+              <button @click="isGirlsExpanded = !isGirlsExpanded" class="text-xs text-customOrange font-bold hover:underline py-1 px-3 bg-customOrange/10 rounded-lg transition">
+                {{ isGirlsExpanded ? '▲ 접기 (5명만 보기)' : `▼ 펼치기 (전체 ${filteredGirls.length}명 보기)` }}
+              </button>
             </div>
           </div>
         </div>
@@ -501,21 +560,29 @@
               </button>
             </div>
 
-            <div class="space-y-3">
-              <div v-for="(sc, scIdx) in filteredCustomers" :key="scIdx" class="bg-zinc-50 dark:bg-[#202020] border border-zinc-200 dark:border-darkBorder p-3 rounded-lg flex items-center gap-2">
-                <input type="text" v-model="sc.name" @input="saveData" placeholder="이름" class="w-[18%] min-w-[60px] p-2 text-xs rounded bg-white dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-zinc-100 outline-none font-semibold">
-                <select v-model="sc.type" @change="saveData" class="w-[18%] min-w-[65px] p-2 text-xs rounded bg-white dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-accent font-bold outline-none text-center">
+            <div class="space-y-2">
+              <!-- key 값으로 고유 id 사용 (타이핑 시 DOM 꼬임 방지) -->
+              <div v-for="sc in displayedCustomers" :key="sc.id" class="bg-zinc-50 dark:bg-[#202020] border border-zinc-200 dark:border-darkBorder py-1.5 px-3 rounded-lg flex items-center gap-2">
+                <input type="text" v-model="sc.name" @input="saveData" placeholder="이름" class="w-[18%] min-w-[60px] p-1 text-xs rounded bg-white dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-zinc-100 outline-none font-semibold">
+                <select v-model="sc.type" @change="saveData" class="w-[18%] min-w-[65px] p-1 text-xs rounded bg-white dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-accent font-bold outline-none text-center">
                   <option value="">선택</option>
                   <option value="시간">시간</option>
                   <option value="개인">개인</option>
                 </select>
-                <textarea v-model="sc.memo" @input="resizeTextareaByEnter($event); saveData()" placeholder="메모" class="flex-1 min-w-0 px-2 py-1.5 text-xs rounded bg-white dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-zinc-200 outline-none leading-relaxed h-[32px]"></textarea>
-                <button @click="removeStandaloneCustomerOriginalIndex(sc)" class="text-rose-500 font-bold px-2 py-1.5 text-xs shrink-0 hover:bg-rose-500/10 rounded">삭제</button>
+                <textarea v-model="sc.memo" @input="resizeTextareaByEnter($event); saveData()" placeholder="메모" class="flex-1 min-w-0 px-2 py-1 text-xs rounded bg-white dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-zinc-200 outline-none leading-relaxed h-[28px]"></textarea>
+                <button @click="removeStandaloneCustomerOriginalIndex(sc)" class="text-rose-500 font-bold px-2 py-1 text-xs shrink-0 hover:bg-rose-500/10 rounded">삭제</button>
               </div>
 
               <div v-if="filteredCustomers.length === 0" class="py-6 text-center text-zinc-500 text-xs">
                 등록된 손님이 없습니다.
               </div>
+            </div>
+
+            <!-- 접기 / 펼치기 버튼 (5명 초과 시) -->
+            <div v-if="filteredCustomers.length > 5 && !searchQuery.trim()" class="pt-2 text-center">
+              <button @click="isCustomersExpanded = !isCustomersExpanded" class="text-xs text-accent font-bold hover:underline py-1 px-3 bg-accent/10 rounded-lg transition">
+                {{ isCustomersExpanded ? '▲ 접기 (5명만 보기)' : `▼ 펼치기 (전체 ${filteredCustomers.length}명 보기)` }}
+              </button>
             </div>
           </div>
         </div>
@@ -575,6 +642,7 @@
     window.addEventListener('DOMContentLoaded', () => {
       const SUPABASE_URL = 'https://ickxgwkvkcgrehufmwut.supabase.co';
       const SUPABASE_KEY = 'sb_publishable_GLv8OIRpMqaI80yBdGng_w_Bh6Wxgqr';
+      const STORAGE_BUCKET = 'Profile image';
       const { createApp, ref, computed, onMounted } = Vue;
 
       createApp({
@@ -643,6 +711,68 @@
           const masterGirls = ref([]);
           const masterCustomers = ref([]);
 
+          const isGirlsExpanded = ref(false);
+          const isCustomersExpanded = ref(false);
+
+          const previewGirl = ref(null);
+
+          const openPhotoModal = (girlObj) => {
+            previewGirl.value = girlObj;
+          };
+
+          const closePhotoModal = () => {
+            previewGirl.value = null;
+          };
+
+          const handlePhotoUpload = async (event, girlObj) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            girlObj.isUploading = true;
+            syncStatus.value = '사진 업로드 중...';
+
+            try {
+              const fileExt = file.name.split('.').pop();
+              const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
+
+              const { data, error } = await supabaseClient.storage
+                .from(STORAGE_BUCKET)
+                .upload(fileName, file, {
+                  cacheControl: '3600',
+                  upsert: false
+                });
+
+              if (error) {
+                alert('사진 업로드 실패: ' + error.message + '\n(Supabase Storage 정책 설정을 확인해 주세요)');
+                syncStatus.value = '업로드 실패 ❌';
+                girlObj.isUploading = false;
+                return;
+              }
+
+              const { data: urlData } = supabaseClient.storage
+                .from(STORAGE_BUCKET)
+                .getPublicUrl(fileName);
+
+              if (urlData && urlData.publicUrl) {
+                girlObj.photoUrl = urlData.publicUrl;
+                saveData();
+              }
+            } catch (err) {
+              alert('사진 업로드 중 오류가 발생했습니다.');
+              syncStatus.value = '업로드 오류 ❌';
+            } finally {
+              girlObj.isUploading = false;
+              event.target.value = '';
+            }
+          };
+
+          const removeGirlPhoto = (girlObj) => {
+            if (confirm('등록된 프로필 사진을 삭제하시겠습니까?')) {
+              girlObj.photoUrl = '';
+              saveData();
+            }
+          };
+
           const fetchCloudData = async () => {
             try {
               syncStatus.value = '불러오는 중...';
@@ -654,8 +784,17 @@
 
               if (data && data.value) {
                 db.value = data.value.db || {};
-                masterGirls.value = data.value.masterGirls || [];
-                masterCustomers.value = data.value.masterCustomers || [];
+                
+                // 기존 데이터에 고유 id가 없으면 생성하여 부여 (안전장치)
+                masterGirls.value = (data.value.masterGirls || []).map(g => ({
+                  id: g.id || ('g_' + Math.random().toString(36).substring(2, 9)),
+                  ...g
+                }));
+                masterCustomers.value = (data.value.masterCustomers || []).map(c => ({
+                  id: c.id || ('c_' + Math.random().toString(36).substring(2, 9)),
+                  ...c
+                }));
+
                 syncStatus.value = '동기화 완료 ✅';
               } else {
                 db.value = {};
@@ -672,8 +811,13 @@
 
           let saveTimeout = null;
           const saveData = () => {
+            const cleanGirls = masterGirls.value.map(g => {
+              const { isUploading, ...rest } = g;
+              return rest;
+            });
+
             localStorage.setItem('bar_trade_journal_db_v47', JSON.stringify(db.value));
-            localStorage.setItem('bar_master_girls_v1', JSON.stringify(masterGirls.value));
+            localStorage.setItem('bar_master_girls_v1', JSON.stringify(cleanGirls));
             localStorage.setItem('bar_master_customers_v1', JSON.stringify(masterCustomers.value));
 
             syncStatus.value = '저장 중...';
@@ -684,7 +828,7 @@
                   key: 'bar_jangbu_cloud_data',
                   value: {
                     db: db.value,
-                    masterGirls: masterGirls.value,
+                    masterGirls: cleanGirls,
                     masterCustomers: masterCustomers.value
                   },
                   updated_at: new Date().toISOString()
@@ -829,6 +973,7 @@
             let drinkPrice = 0;
             if (r.drinkType === '12년') drinkPrice = 120000;
             else if (r.drinkType === '17년') drinkPrice = 170000;
+            else if (r.drinkType === '소맥') drinkPrice = 100000;
 
             const motelUnit = (Number(r.motelFee) === 50000) ? 50000 : 0;
             const motelQty = Number(r.motelQty) || 1;
@@ -846,6 +991,7 @@
             let drinkPrice = 0;
             if (r.drinkType === '12년') drinkPrice = 150000;
             else if (r.drinkType === '17년') drinkPrice = 200000;
+            else if (r.drinkType === '소맥') drinkPrice = 130000;
 
             const motelUnit = (Number(r.motelFee) === 100000) ? 100000 : 0;
             const motelQty = Number(r.motelQty) || 1;
@@ -878,15 +1024,18 @@
             const lineCount = (val.match(/\n/g) || []).length + 1;
             
             if (lineCount <= 1) {
-              el.style.height = '32px';
+              el.style.height = '28px';
             } else {
               el.style.height = 'auto';
-              el.style.height = Math.max(32, el.scrollHeight) + 'px';
+              el.style.height = Math.max(28, el.scrollHeight) + 'px';
             }
           };
 
           const addStandaloneGirl = () => {
-            masterGirls.value.push({ name: "", office: "사무실", type: "", memo: "" });
+            masterGirls.value.push({ 
+              id: 'g_' + Date.now() + Math.random().toString(36).substring(2, 7),
+              name: "", office: "사무실", type: "", memo: "", photoUrl: "" 
+            });
             saveData();
           };
 
@@ -899,7 +1048,10 @@
           };
 
           const addStandaloneCustomer = () => {
-            masterCustomers.value.push({ name: "", type: "", memo: "" });
+            masterCustomers.value.push({ 
+              id: 'c_' + Date.now() + Math.random().toString(36).substring(2, 7),
+              name: "", type: "", memo: "" 
+            });
             saveData();
           };
 
@@ -914,7 +1066,7 @@
           const addRoomCard = () => {
             currentDayData.value.rooms.push({
               _id: Date.now() + Math.random(),
-              no: "1T", customer: "", rtChecked: false, motelFee: 0, motelQty: 1, extraType: "", extraAmount: 0, drinkType: "12년", drinkQty: 1, serviceQty: 0, price: 0, payMethod: "현금", price2: 0, payMethod2: "카드", note: "", girls: []
+              no: "1T", customer: "", rtChecked: true, motelFee: 0, motelQty: 1, extraType: "", extraAmount: 0, drinkType: "12년", drinkQty: 1, serviceQty: 0, price: 0, payMethod: "현금", price2: 0, payMethod2: "카드", note: "", girls: []
             });
             saveData();
           };
@@ -944,6 +1096,7 @@
             const q = searchQuery.value.toLowerCase().trim();
             if (!q) {
               return currentDayData.value.rooms.map(r => {
+                if (r.rtChecked === undefined) r.rtChecked = true;
                 if (!r.payMethod2) r.payMethod2 = '카드';
                 if (r.serviceQty === undefined) r.serviceQty = 0;
                 return { _date: selectedDate.value, _originalRef: r };
@@ -955,6 +1108,7 @@
               const dayObj = db.value[dateKey];
               if (dayObj && dayObj.rooms) {
                 dayObj.rooms.forEach(r => {
+                  if (r.rtChecked === undefined) r.rtChecked = true;
                   if (!r.payMethod2) r.payMethod2 = '카드';
                   if (r.serviceQty === undefined) r.serviceQty = 0;
                   const match = 
@@ -1019,6 +1173,7 @@
             }));
           });
 
+          // 접대원 개별 목록: 1순위 사무실 ㄱ-ㅎ, 2순위 이름 ㄱ-ㅎ 정렬
           const filteredGirls = computed(() => {
             const q = searchQuery.value.toLowerCase().trim();
             let list = [...masterGirls.value];
@@ -1028,6 +1183,8 @@
             });
 
             list.sort((a, b) => {
+              const officeCompare = (a.office || '').localeCompare(b.office || '', 'ko');
+              if (officeCompare !== 0) return officeCompare;
               if (!a.name) return 1;
               if (!b.name) return -1;
               return a.name.localeCompare(b.name, 'ko');
@@ -1042,6 +1199,14 @@
             );
           });
 
+          const displayedGirls = computed(() => {
+            if (searchQuery.value.trim() || isGirlsExpanded.value) {
+              return filteredGirls.value;
+            }
+            return filteredGirls.value.slice(0, 5);
+          });
+
+          // 손님 개별 목록: 이름 ㄱ-ㅎ 정렬 (입력 중 꼬임 방지를 위해 안정적 정렬 적용)
           const filteredCustomers = computed(() => {
             const q = searchQuery.value.toLowerCase().trim();
             let list = [...masterCustomers.value];
@@ -1058,6 +1223,13 @@
               (c.memo && c.memo.toLowerCase().includes(q)) ||
               (c.type && c.type.toLowerCase().includes(q))
             );
+          });
+
+          const displayedCustomers = computed(() => {
+            if (searchQuery.value.trim() || isCustomersExpanded.value) {
+              return filteredCustomers.value;
+            }
+            return filteredCustomers.value.slice(0, 5);
           });
 
           const todayTotalDrinks = computed(() => {
@@ -1140,7 +1312,9 @@
             todayTotalDrinks, monthTotalDrinks, calendarYear, calendarMonth, calendarDays, dailyRoomCountMap, prevMonth, nextMonth, selectDateFromCalendar, exportJSON, resizeTextarea, resizeTextareaByEnter, calculateGirlFee, calculateRoomTotalCash, calculateRoomTotalCard, formatKoreanFee,
             addStandaloneGirl, removeStandaloneGirlOriginalIndex, addStandaloneCustomer, removeStandaloneCustomerOriginalIndex, totalAutoCash, totalAutoCard,
             isLoggedIn, authError, authForm, handleLogin, handleLogout,
-            roomQuickNavList, jumpToRoom, syncStatus, onExtraTypeChange
+            roomQuickNavList, jumpToRoom, syncStatus, onExtraTypeChange,
+            previewGirl, openPhotoModal, closePhotoModal, handlePhotoUpload, removeGirlPhoto,
+            isGirlsExpanded, isCustomersExpanded, displayedGirls, displayedCustomers
           };
         }
       }).mount('#app');

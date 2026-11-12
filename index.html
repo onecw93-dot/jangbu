@@ -90,16 +90,16 @@
     <!-- 🌟 로그인 성공 시 열리는 메인 장부 UI -->
     <template v-else>
       
-      <!-- 방 번호 퀵 내비게이터 바 -->
-      <aside class="fixed right-3 top-1/2 -translate-y-1/2 z-40 hidden sm:flex flex-col gap-1 bg-white/80 dark:bg-darkCard/90 backdrop-blur border border-zinc-200 dark:border-darkBorder p-1.5 rounded-xl shadow-xl max-h-[70vh] overflow-y-auto">
-        <span class="text-[9px] font-bold text-center text-zinc-400 pb-1 border-b border-zinc-200 dark:border-darkBorder">방 이동</span>
+      <!-- 📱 모바일 & PC 겸용 방 번호 퀵 내비게이터 바 (우측 고정) -->
+      <aside class="fixed right-1 sm:right-3 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-1 bg-white/85 dark:bg-darkCard/85 backdrop-blur-md border border-zinc-300 dark:border-darkBorder p-1 sm:p-1.5 rounded-xl shadow-xl max-h-[65vh] overflow-y-auto">
+        <span class="text-[8px] sm:text-[9px] font-bold text-center text-zinc-400 pb-0.5 sm:pb-1 border-b border-zinc-200 dark:border-darkBorder">이동</span>
         <button v-for="(item, idx) in roomQuickNavList" :key="idx" 
                 @click="jumpToRoom(item.roomRef, item.index)"
-                class="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-[#202020] hover:bg-accent hover:text-zinc-950 text-xs font-mono font-bold text-zinc-300 transition flex items-center justify-center border border-zinc-200 dark:border-darkBorder"
+                class="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-zinc-100 dark:bg-[#202020] hover:bg-accent hover:text-zinc-950 active:bg-accent active:text-zinc-950 text-[10px] sm:text-xs font-mono font-bold text-zinc-700 dark:text-zinc-200 transition flex items-center justify-center border border-zinc-200 dark:border-darkBorder shrink-0"
                 :title="item.roomRef.no + ' (클릭 시 해당 방으로 이동)'">
           {{ item.roomRef.no }}
         </button>
-        <div v-if="roomQuickNavList.length === 0" class="text-[9px] text-zinc-500 text-center py-2">없음</div>
+        <div v-if="roomQuickNavList.length === 0" class="text-[8px] sm:text-[9px] text-zinc-500 text-center py-1.5 px-0.5">없음</div>
       </aside>
 
       <!-- 헤더 영역 -->
@@ -233,7 +233,7 @@
 
             <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 text-xs">
               
-              <!-- 왼쪽 컬럼: 손님, 옵션(RT / 모텔비/수량), 현금빌려감/팁, 술/수량/서비스 -->
+              <!-- 왼쪽 컬럼: 손님, 옵션(RT / 모텔비/수량), 현금/팁, 술/수량/서비스 -->
               <div class="sm:col-span-5 space-y-2">
                 <div>
                   <label class="block text-[10px] text-zinc-400 mb-0.5">손님</label>
@@ -266,13 +266,13 @@
                   </div>
                 </div>
 
-                <!-- 현금 빌려감 / 팁 -->
+                <!-- 현금 / 팁 입력 영역 -->
                 <div class="flex flex-col gap-1.5 bg-zinc-50 dark:bg-[#1a1a1a] p-2 rounded border border-zinc-200 dark:border-darkBorder">
                   <div class="flex items-center justify-between">
                     <span class="text-[10px] font-bold text-customOrange">추가 항목 (현금/팁)</span>
-                    <select v-model="roomWrap._originalRef.extraType" @change="saveData" class="p-1 rounded bg-white dark:bg-[#222] border border-zinc-300 dark:border-darkBorder text-zinc-200 text-[11px] outline-none">
+                    <select v-model="roomWrap._originalRef.extraType" @change="onExtraTypeChange(roomWrap._originalRef)" class="p-1 rounded bg-white dark:bg-[#222] border border-zinc-300 dark:border-darkBorder text-zinc-200 text-[11px] outline-none">
                       <option value="">선택 안함</option>
-                      <option value="현금">현금 빌려감</option>
+                      <option value="현금">현금</option>
                       <option value="팁">팁</option>
                     </select>
                   </div>
@@ -286,7 +286,7 @@
                   </div>
                 </div>
 
-                <!-- 🌟 [수정] 술 / 수량 / 서비스 수량 차감 선택 -->
+                <!-- 술 / 수량 / 서비스 수량 차감 선택 -->
                 <div>
                   <div class="flex justify-between items-center mb-0.5">
                     <label class="block text-[10px] text-zinc-400">술 / 수량</label>
@@ -387,7 +387,7 @@
 
             </div>
 
-            <!-- 하단 총액 계산 (서비스 차감 자동 적용) -->
+            <!-- 하단 총액 계산 (현금/팁 추가 금액 + 서비스 차감 자동 적용) -->
             <div class="bg-zinc-100 dark:bg-[#181818] p-2.5 rounded-lg border border-zinc-200 dark:border-darkBorder space-y-2 text-xs">
               <div class="grid grid-cols-2 gap-2">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between bg-zinc-200/50 dark:bg-[#222] p-2 rounded border border-zinc-300 dark:border-zinc-700/60">
@@ -786,6 +786,13 @@
             return total;
           };
 
+          const onExtraTypeChange = (roomObj) => {
+            if (!roomObj.extraType) {
+              roomObj.extraAmount = 0;
+            }
+            saveData();
+          };
+
           const getCommonExtraFee = (r) => {
             let extra = 0;
             if (r.rtChecked) extra += 20000;
@@ -794,10 +801,12 @@
                 extra += calculateGirlFee(g);
               });
             }
+            if (r.extraType && Number(r.extraAmount) > 0) {
+              extra += Number(r.extraAmount);
+            }
             return extra;
           };
 
-          // 🌟 [수정] 서비스 수량 차감 반영된 현금가 계산
           const calculateRoomTotalCash = (r) => {
             const qty = Number(r.drinkQty) || 0;
             const serviceQty = Number(r.serviceQty) || 0;
@@ -810,13 +819,11 @@
             const motelQty = Number(r.motelQty) || 1;
             const totalMotel = motelUnit * motelQty;
 
-            // 총 술 수량 계산 시 서비스 수량만큼 금액 차감
             const payableQty = Math.max(0, qty - serviceQty);
 
             return (drinkPrice * payableQty) + getCommonExtraFee(r) + totalMotel;
           };
 
-          // 🌟 [수정] 서비스 수량 차감 반영된 카드가 계산
           const calculateRoomTotalCard = (r) => {
             const qty = Number(r.drinkQty) || 0;
             const serviceQty = Number(r.serviceQty) || 0;
@@ -1113,7 +1120,7 @@
             todayTotalDrinks, monthTotalDrinks, calendarYear, calendarMonth, calendarDays, dailyRoomCountMap, prevMonth, nextMonth, selectDateFromCalendar, exportJSON, resizeTextarea, resizeTextareaByEnter, calculateGirlFee, calculateRoomTotalCash, calculateRoomTotalCard, formatKoreanFee,
             addStandaloneGirl, removeStandaloneGirlOriginalIndex, addStandaloneCustomer, removeStandaloneCustomerOriginalIndex, totalAutoCash, totalAutoCard,
             isLoggedIn, authError, authForm, handleLogin, handleLogout,
-            roomQuickNavList, jumpToRoom, syncStatus
+            roomQuickNavList, jumpToRoom, syncStatus, onExtraTypeChange
           };
         }
       }).mount('#app');

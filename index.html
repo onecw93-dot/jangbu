@@ -441,7 +441,7 @@
       <!-- 접대원 & 손님 목록 현황판 -->
       <section class="grid grid-cols-1 xl:grid-cols-2 gap-4">
         
-        <!-- 왼쪽: 접대원 현황판 -->
+        <!-- 왼쪽: 접대원 현황판 (사무실 드롭다운 추가됨) -->
         <div class="bg-white dark:bg-darkCard border border-zinc-200 dark:border-darkBorder p-4 sm:p-5 rounded-xl shadow-sm space-y-3 flex flex-col justify-between" v-show="!searchQuery.trim() || filteredGirls.length > 0">
           <div>
             <div class="flex justify-between items-center pb-2 border-b border-zinc-200 dark:border-darkBorder mb-3">
@@ -455,15 +455,30 @@
             </div>
 
             <div class="space-y-3">
-              <div v-for="(sg, sgIdx) in filteredGirls" :key="sgIdx" class="bg-zinc-50 dark:bg-[#202020] border border-zinc-200 dark:border-darkBorder p-3 rounded-lg flex items-center gap-2">
-                <input type="text" v-model="sg.name" @input="saveData" placeholder="이름" class="w-[18%] min-w-[60px] p-2 text-xs rounded bg-white dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-zinc-100 outline-none font-semibold">
-                <select v-model="sg.type" @change="saveData" class="w-[18%] min-w-[65px] p-2 text-xs rounded bg-white dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-accent font-bold outline-none text-center">
+              <div v-for="(sg, sgIdx) in filteredGirls" :key="sgIdx" class="bg-zinc-50 dark:bg-[#202020] border border-zinc-200 dark:border-darkBorder p-2.5 sm:p-3 rounded-lg flex items-center gap-1.5 sm:gap-2">
+                <input type="text" v-model="sg.name" @input="saveData" placeholder="이름" class="w-[16%] min-w-[52px] p-1.5 sm:p-2 text-xs rounded bg-white dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-zinc-100 outline-none font-semibold">
+                
+                <select v-model="sg.office" @change="saveData" class="w-[19%] min-w-[62px] p-1.5 sm:p-2 text-xs rounded bg-white dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-customOrange font-semibold outline-none text-center">
+                  <option value="사무실">사무실</option>
+                  <option value="거성">거성</option>
+                  <option value="비비">비비</option>
+                  <option value="여우">여우</option>
+                  <option value="타임">타임</option>
+                  <option value="패밀리">패밀리</option>
+                  <option value="하이디">하이디</option>
+                  <option value="현대">현대</option>
+                  <option value="퀸">퀸</option>
+                </select>
+
+                <select v-model="sg.type" @change="saveData" class="w-[16%] min-w-[54px] p-1.5 sm:p-2 text-xs rounded bg-white dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-accent font-bold outline-none text-center">
                   <option value="">선택</option>
                   <option value="시간">시간</option>
                   <option value="개인">개인</option>
                 </select>
+
                 <textarea v-model="sg.memo" @input="resizeTextareaByEnter($event); saveData()" placeholder="메모" class="flex-1 min-w-0 px-2 py-1.5 text-xs rounded bg-white dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-zinc-200 outline-none leading-relaxed h-[32px]"></textarea>
-                <button @click="removeStandaloneGirlOriginalIndex(sg)" class="text-rose-500 font-bold px-2 py-1.5 text-xs shrink-0 hover:bg-rose-500/10 rounded">삭제</button>
+                
+                <button @click="removeStandaloneGirlOriginalIndex(sg)" class="text-rose-500 font-bold px-1.5 sm:px-2 py-1.5 text-xs shrink-0 hover:bg-rose-500/10 rounded">삭제</button>
               </div>
 
               <div v-if="filteredGirls.length === 0" class="py-6 text-center text-zinc-500 text-xs">
@@ -871,7 +886,7 @@
           };
 
           const addStandaloneGirl = () => {
-            masterGirls.value.push({ name: "", type: "", memo: "" });
+            masterGirls.value.push({ name: "", office: "사무실", type: "", memo: "" });
             saveData();
           };
 
@@ -1008,6 +1023,10 @@
             const q = searchQuery.value.toLowerCase().trim();
             let list = [...masterGirls.value];
             
+            list.forEach(g => {
+              if (!g.office) g.office = '사무실';
+            });
+
             list.sort((a, b) => {
               if (!a.name) return 1;
               if (!b.name) return -1;
@@ -1017,6 +1036,7 @@
             if (!q) return list;
             return list.filter(g => 
               (g.name && g.name.toLowerCase().includes(q)) || 
+              (g.office && g.office.toLowerCase().includes(q)) ||
               (g.memo && g.memo.toLowerCase().includes(q)) ||
               (g.type && g.type.toLowerCase().includes(q))
             );

@@ -90,8 +90,8 @@
     <!-- 🌟 로그인 성공 시 열리는 메인 장부 UI -->
     <template v-else>
       
-      <!-- 📱 모바일 & PC 겸용 방 번호 퀵 내비게이터 바 (우측 고정) -->
-      <aside class="fixed right-1 sm:right-3 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-1 bg-white/85 dark:bg-darkCard/85 backdrop-blur-md border border-zinc-300 dark:border-darkBorder p-1 sm:p-1.5 rounded-xl shadow-xl max-h-[65vh] overflow-y-auto">
+      <!-- 📱 모바일 & PC 겸용 방 번호 퀵 내비게이터 바 (왼쪽 끝 고정) -->
+      <aside class="fixed left-1 sm:left-3 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-1 bg-white/85 dark:bg-darkCard/85 backdrop-blur-md border border-zinc-300 dark:border-darkBorder p-1 sm:p-1.5 rounded-xl shadow-xl max-h-[65vh] overflow-y-auto">
         <span class="text-[8px] sm:text-[9px] font-bold text-center text-zinc-400 pb-0.5 sm:pb-1 border-b border-zinc-200 dark:border-darkBorder">이동</span>
         <button v-for="(item, idx) in roomQuickNavList" :key="idx" 
                 @click="jumpToRoom(item.roomRef, item.index)"

@@ -118,6 +118,102 @@
       </div>
     </div>
 
+    <!-- 👩‍💼 접대원 추가/수정 팝업 모달 -->
+    <div v-if="girlModal.isOpen" @click.self="closeGirlModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="bg-white dark:bg-darkCard border border-zinc-200 dark:border-darkBorder p-5 sm:p-6 rounded-2xl shadow-2xl max-w-sm w-full space-y-4">
+        <div class="flex justify-between items-center border-b border-zinc-200 dark:border-darkBorder pb-2">
+          <h3 class="text-sm font-bold text-customOrange">{{ girlModal.isEdit ? '👩‍💼 접대원 정보 수정' : '👩‍💼 새 접대원 등록' }}</h3>
+          <button @click="closeGirlModal" class="text-zinc-400 hover:text-zinc-100 text-base font-bold px-1">✕</button>
+        </div>
+
+        <div class="space-y-3 text-xs">
+          <div>
+            <label class="block text-zinc-400 mb-1 font-semibold">이름</label>
+            <input type="text" v-model="girlModal.form.name" placeholder="이름 입력" class="w-full p-2 rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-zinc-100 outline-none focus:border-accent">
+          </div>
+
+          <div>
+            <label class="block text-zinc-400 mb-1 font-semibold">사무실</label>
+            <select v-model="girlModal.form.office" class="w-full p-2 rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-customOrange font-semibold outline-none">
+              <option value="사무실">사무실</option>
+              <option value="거성">거성</option>
+              <option value="대한">대한</option>
+              <option value="비비">비비</option>
+              <option value="여우">여우</option>
+              <option value="타임">타임</option>
+              <option value="패밀리">패밀리</option>
+              <option value="하이디">하이디</option>
+              <option value="현대">현대</option>
+              <option value="퀸">퀸</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-zinc-400 mb-1 font-semibold">구분</label>
+            <select v-model="girlModal.form.type" class="w-full p-2 rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-accent font-bold outline-none">
+              <option value="">선택 안함</option>
+              <option value="시간">시간</option>
+              <option value="개인">개인</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-zinc-400 mb-1 font-semibold">메모</label>
+            <textarea v-model="girlModal.form.memo" placeholder="메모 입력" class="w-full p-2 rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-zinc-200 outline-none h-20"></textarea>
+          </div>
+        </div>
+
+        <div class="flex gap-2 pt-2">
+          <button @click="saveGirlModal" class="flex-1 py-2.5 bg-accent hover:bg-accentHover text-zinc-950 font-bold rounded-lg text-xs transition shadow">
+            저장하기
+          </button>
+          <button @click="closeGirlModal" class="py-2.5 px-4 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 font-bold rounded-lg text-xs transition">
+            취소
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 🕺 손님 추가/수정 팝업 모달 -->
+    <div v-if="customerModal.isOpen" @click.self="closeCustomerModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="bg-white dark:bg-darkCard border border-zinc-200 dark:border-darkBorder p-5 sm:p-6 rounded-2xl shadow-2xl max-w-sm w-full space-y-4">
+        <div class="flex justify-between items-center border-b border-zinc-200 dark:border-darkBorder pb-2">
+          <h3 class="text-sm font-bold text-accent">{{ customerModal.isEdit ? '🕺 손님 정보 수정' : '🕺 새 손님 등록' }}</h3>
+          <button @click="closeCustomerModal" class="text-zinc-400 hover:text-zinc-100 text-base font-bold px-1">✕</button>
+        </div>
+
+        <div class="space-y-3 text-xs">
+          <div>
+            <label class="block text-zinc-400 mb-1 font-semibold">이름</label>
+            <input type="text" v-model="customerModal.form.name" placeholder="이름 입력" class="w-full p-2 rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-zinc-100 outline-none focus:border-accent">
+          </div>
+
+          <div>
+            <label class="block text-zinc-400 mb-1 font-semibold">구분</label>
+            <select v-model="customerModal.form.type" class="w-full p-2 rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-accent font-bold outline-none">
+              <option value="">선택 안함</option>
+              <option value="시간">시간</option>
+              <option value="개인">개인</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-zinc-400 mb-1 font-semibold">메모</label>
+            <textarea v-model="customerModal.form.memo" placeholder="메모 입력" class="w-full p-2 rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-zinc-200 outline-none h-20"></textarea>
+          </div>
+        </div>
+
+        <div class="flex gap-2 pt-2">
+          <button @click="saveCustomerModal" class="flex-1 py-2.5 bg-accent hover:bg-accentHover text-zinc-950 font-bold rounded-lg text-xs transition shadow">
+            저장하기
+          </button>
+          <button @click="closeCustomerModal" class="py-2.5 px-4 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 font-bold rounded-lg text-xs transition">
+            취소
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- 🌟 로그인 성공 시 열리는 메인 장부 UI -->
     <template v-else>
       
@@ -268,7 +364,7 @@
 
             <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 text-xs">
               
-              <!-- 왼쪽 컬럼: 손님, 옵션(RT / 모텔비/수량), 현금/팁, 술/수량/서비스 -->
+              <!-- 왼쪽 컬럼 -->
               <div class="sm:col-span-5 space-y-2">
                 <div>
                   <label class="block text-[10px] text-zinc-400 mb-0.5">손님</label>
@@ -486,51 +582,39 @@
                 <h3 class="text-xs font-bold text-customOrange tracking-wider">👩‍💼 접대원 개별 목록 관리 현황판</h3>
                 <span class="text-[10px] bg-customOrange/10 text-customOrange px-2 py-0.5 rounded font-bold">총 {{ filteredGirls.length }}명</span>
               </div>
-              <button @click="addStandaloneGirl" class="text-xs bg-customOrange hover:bg-orange-600 text-zinc-950 font-bold px-3 py-1 rounded transition shadow-sm">
+              <button @click="openAddGirlModal" class="text-xs bg-customOrange hover:bg-orange-600 text-zinc-950 font-bold px-3 py-1 rounded transition shadow-sm">
                 + 접대원 추가
               </button>
             </div>
 
             <div class="space-y-2">
-              <!-- key 값으로 고유 id 사용 (타이핑 시 DOM 꼬임 방지) -->
-              <div v-for="sg in displayedGirls" :key="sg.id" class="bg-zinc-50 dark:bg-[#202020] border border-zinc-200 dark:border-darkBorder py-1.5 px-2.5 rounded-lg flex items-center gap-1.5 sm:gap-2">
+              <div v-for="sg in displayedGirls" :key="sg.id" class="bg-zinc-50 dark:bg-[#202020] border border-zinc-200 dark:border-darkBorder py-2 px-3 rounded-lg flex items-center justify-between gap-2">
                 
-                <!-- 📸 프로필 이미지 썸네일 / 업로드 버튼 -->
-                <div class="shrink-0 relative flex items-center">
-                  <button v-if="sg.photoUrl" @click="openPhotoModal(sg)" type="button" class="w-7 h-7 rounded-full overflow-hidden border border-customOrange/70 hover:ring-2 hover:ring-accent transition block" title="클릭 시 크게 보기">
-                    <img :src="sg.photoUrl" alt="프로필" class="w-full h-full object-cover">
-                  </button>
-                  <label v-else class="w-7 h-7 rounded-full bg-zinc-200 dark:bg-[#1a1a1a] border border-dashed border-zinc-400 dark:border-zinc-600 hover:border-accent flex items-center justify-center cursor-pointer text-zinc-400 hover:text-accent transition" title="사진 업로드">
-                    <span v-if="sg.isUploading" class="text-[9px] font-bold animate-pulse">...</span>
-                    <span v-else class="text-[10px]">📷</span>
-                    <input type="file" accept="image/*" class="hidden" @change="handlePhotoUpload($event, sg)">
-                  </label>
+                <!-- 왼쪽 정보 표시 -->
+                <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                  <!-- 📸 프로필 이미지 썸네일 / 업로드 버튼 -->
+                  <div class="shrink-0 relative flex items-center">
+                    <button v-if="sg.photoUrl" @click="openPhotoModal(sg)" type="button" class="w-7 h-7 rounded-full overflow-hidden border border-customOrange/70 hover:ring-2 hover:ring-accent transition block" title="클릭 시 크게 보기">
+                      <img :src="sg.photoUrl" alt="프로필" class="w-full h-full object-cover">
+                    </button>
+                    <label v-else class="w-7 h-7 rounded-full bg-zinc-200 dark:bg-[#1a1a1a] border border-dashed border-zinc-400 dark:border-zinc-600 hover:border-accent flex items-center justify-center cursor-pointer text-zinc-400 hover:text-accent transition" title="사진 업로드">
+                      <span v-if="sg.isUploading" class="text-[9px] font-bold animate-pulse">...</span>
+                      <span v-else class="text-[10px]">📷</span>
+                      <input type="file" accept="image/*" class="hidden" @change="handlePhotoUpload($event, sg)">
+                    </label>
+                  </div>
+
+                  <span class="font-bold text-xs text-zinc-100 min-w-[50px] truncate">{{ sg.name }}</span>
+                  <span class="text-[11px] font-semibold text-customOrange bg-customOrange/10 px-2 py-0.5 rounded shrink-0">{{ sg.office || '사무실' }}</span>
+                  <span v-if="sg.type" class="text-[10px] font-bold text-accent bg-accent/10 px-1.5 py-0.5 rounded shrink-0">{{ sg.type }}</span>
+                  <span class="text-xs text-zinc-400 truncate flex-1" :title="sg.memo">{{ sg.memo || '메모 없음' }}</span>
                 </div>
 
-                <input type="text" v-model="sg.name" @input="saveData" placeholder="이름" class="w-[15%] min-w-[48px] p-1 text-xs rounded bg-white dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-zinc-100 outline-none font-semibold">
-                
-                <select v-model="sg.office" @change="saveData" class="w-[18%] min-w-[58px] p-1 text-xs rounded bg-white dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-customOrange font-semibold outline-none text-center">
-                  <option value="사무실">사무실</option>
-                  <option value="거성">거성</option>
-                  <option value="대한">대한</option>
-                  <option value="비비">비비</option>
-                  <option value="여우">여우</option>
-                  <option value="타임">타임</option>
-                  <option value="패밀리">패밀리</option>
-                  <option value="하이디">하이디</option>
-                  <option value="현대">현대</option>
-                  <option value="퀸">퀸</option>
-                </select>
-
-                <select v-model="sg.type" @change="saveData" class="w-[15%] min-w-[50px] p-1 text-xs rounded bg-white dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-accent font-bold outline-none text-center">
-                  <option value="">선택</option>
-                  <option value="시간">시간</option>
-                  <option value="개인">개인</option>
-                </select>
-
-                <textarea v-model="sg.memo" @input="resizeTextareaByEnter($event); saveData()" placeholder="메모" class="flex-1 min-w-0 px-2 py-1 text-xs rounded bg-white dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-zinc-200 outline-none leading-relaxed h-[28px]"></textarea>
-                
-                <button @click="removeStandaloneGirlOriginalIndex(sg)" class="text-rose-500 font-bold px-1.5 py-1 text-xs shrink-0 hover:bg-rose-500/10 rounded">삭제</button>
+                <!-- 오른쪽 수정/삭제 버튼 -->
+                <div class="flex items-center gap-1 shrink-0">
+                  <button @click="openEditGirlModal(sg)" class="text-xs px-2 py-1 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 rounded font-semibold text-zinc-300">수정</button>
+                  <button @click="removeStandaloneGirlOriginalIndex(sg)" class="text-xs px-2 py-1 bg-rose-500/15 hover:bg-rose-500/25 rounded font-bold text-rose-400">삭제</button>
+                </div>
               </div>
 
               <div v-if="filteredGirls.length === 0" class="py-6 text-center text-zinc-500 text-xs">
@@ -555,22 +639,26 @@
                 <h3 class="text-xs font-bold text-accent tracking-wider">🕺 손님 개별 목록 관리 현황판</h3>
                 <span class="text-[10px] bg-accent/10 text-accent px-2 py-0.5 rounded font-bold">총 {{ filteredCustomers.length }}명</span>
               </div>
-              <button @click="addStandaloneCustomer" class="text-xs bg-accent hover:bg-accentHover text-zinc-950 font-bold px-3 py-1 rounded transition shadow-sm">
+              <button @click="openAddCustomerModal" class="text-xs bg-accent hover:bg-accentHover text-zinc-950 font-bold px-3 py-1 rounded transition shadow-sm">
                 + 손님 추가
               </button>
             </div>
 
             <div class="space-y-2">
-              <!-- key 값으로 고유 id 사용 (타이핑 시 DOM 꼬임 방지) -->
-              <div v-for="sc in displayedCustomers" :key="sc.id" class="bg-zinc-50 dark:bg-[#202020] border border-zinc-200 dark:border-darkBorder py-1.5 px-3 rounded-lg flex items-center gap-2">
-                <input type="text" v-model="sc.name" @input="saveData" placeholder="이름" class="w-[18%] min-w-[60px] p-1 text-xs rounded bg-white dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-zinc-100 outline-none font-semibold">
-                <select v-model="sc.type" @change="saveData" class="w-[18%] min-w-[65px] p-1 text-xs rounded bg-white dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-accent font-bold outline-none text-center">
-                  <option value="">선택</option>
-                  <option value="시간">시간</option>
-                  <option value="개인">개인</option>
-                </select>
-                <textarea v-model="sc.memo" @input="resizeTextareaByEnter($event); saveData()" placeholder="메모" class="flex-1 min-w-0 px-2 py-1 text-xs rounded bg-white dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-zinc-200 outline-none leading-relaxed h-[28px]"></textarea>
-                <button @click="removeStandaloneCustomerOriginalIndex(sc)" class="text-rose-500 font-bold px-2 py-1 text-xs shrink-0 hover:bg-rose-500/10 rounded">삭제</button>
+              <div v-for="sc in displayedCustomers" :key="sc.id" class="bg-zinc-50 dark:bg-[#202020] border border-zinc-200 dark:border-darkBorder py-2 px-3 rounded-lg flex items-center justify-between gap-2">
+                
+                <!-- 왼쪽 정보 표시 -->
+                <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                  <span class="font-bold text-xs text-zinc-100 min-w-[50px] truncate">{{ sc.name }}</span>
+                  <span v-if="sc.type" class="text-[10px] font-bold text-accent bg-accent/10 px-1.5 py-0.5 rounded shrink-0">{{ sc.type }}</span>
+                  <span class="text-xs text-zinc-400 truncate flex-1" :title="sc.memo">{{ sc.memo || '메모 없음' }}</span>
+                </div>
+
+                <!-- 오른쪽 수정/삭제 버튼 -->
+                <div class="flex items-center gap-1 shrink-0">
+                  <button @click="openEditCustomerModal(sc)" class="text-xs px-2 py-1 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 rounded font-semibold text-zinc-300">수정</button>
+                  <button @click="removeStandaloneCustomerOriginalIndex(sc)" class="text-xs px-2 py-1 bg-rose-500/15 hover:bg-rose-500/25 rounded font-bold text-rose-400">삭제</button>
+                </div>
               </div>
 
               <div v-if="filteredCustomers.length === 0" class="py-6 text-center text-zinc-500 text-xs">
@@ -716,6 +804,119 @@
 
           const previewGirl = ref(null);
 
+          // 접대원 등록/수정 모달 상태
+          const girlModal = ref({
+            isOpen: false,
+            isEdit: false,
+            editId: null,
+            form: { name: '', office: '사무실', type: '', memo: '', photoUrl: '' }
+          });
+
+          // 손님 등록/수정 모달 상태
+          const customerModal = ref({
+            isOpen: false,
+            isEdit: false,
+            editId: null,
+            form: { name: '', type: '', memo: '' }
+          });
+
+          const openAddGirlModal = () => {
+            girlModal.value = {
+              isOpen: true,
+              isEdit: false,
+              editId: null,
+              form: { name: '', office: '사무실', type: '', memo: '', photoUrl: '' }
+            };
+          };
+
+          const openEditGirlModal = (item) => {
+            girlModal.value = {
+              isOpen: true,
+              isEdit: true,
+              editId: item.id,
+              form: { name: item.name, office: item.office || '사무실', type: item.type || '', memo: item.memo || '', photoUrl: item.photoUrl || '' }
+            };
+          };
+
+          const closeGirlModal = () => {
+            girlModal.value.isOpen = false;
+          };
+
+          const saveGirlModal = () => {
+            if (!girlModal.value.form.name.trim()) {
+              alert('이름을 입력해 주세요.');
+              return;
+            }
+
+            if (girlModal.value.isEdit) {
+              const target = masterGirls.value.find(g => g.id === girlModal.value.editId);
+              if (target) {
+                target.name = girlModal.value.form.name.trim();
+                target.office = girlModal.value.form.office;
+                target.type = girlModal.value.form.type;
+                target.memo = girlModal.value.form.memo.trim();
+              }
+            } else {
+              masterGirls.value.push({
+                id: 'g_' + Date.now() + Math.random().toString(36).substring(2, 7),
+                name: girlModal.value.form.name.trim(),
+                office: girlModal.value.form.office,
+                type: girlModal.value.form.type,
+                memo: girlModal.value.form.memo.trim(),
+                photoUrl: ''
+              });
+            }
+            saveData();
+            closeGirlModal();
+          };
+
+          const openAddCustomerModal = () => {
+            customerModal.value = {
+              isOpen: true,
+              isEdit: false,
+              editId: null,
+              form: { name: '', type: '', memo: '' }
+            };
+          };
+
+          const openEditCustomerModal = (item) => {
+            customerModal.value = {
+              isOpen: true,
+              isEdit: true,
+              editId: item.id,
+              form: { name: item.name, type: item.type || '', memo: item.memo || '' }
+            };
+          };
+
+          const closeCustomerModal = () => {
+            customerModal.value.isOpen = false;
+          };
+
+          const saveCustomerModal = () => {
+            if (!customerModal.value.form.name.trim()) {
+              alert('이름을 입력해 주세요.');
+              return;
+            }
+
+            if (customerModal.value.isEdit) {
+              const target = masterCustomers.value.find(c => c.id === customerModal.value.editId);
+              if (target) {
+                target.name = customerModal.value.form.name.trim();
+                target.type = customerModal.value.form.type;
+                target.memo = customerModal.value.form.memo.trim();
+              }
+            } else {
+              masterCustomers.value.push({
+                id: 'c_' + Date.now() + Math.random().toString(36).substring(2, 7),
+                name: customerModal.value.form.name.trim(),
+                type: customerModal.value.form.type,
+                memo: customerModal.value.form.memo.trim()
+              });
+            }
+            saveData();
+            closeCustomerModal();
+          };
+
           const openPhotoModal = (girlObj) => {
             previewGirl.value = girlObj;
           };
@@ -743,7 +944,7 @@
                 });
 
               if (error) {
-                alert('사진 업로드 실패: ' + error.message + '\n(Supabase Storage 정책 설정을 확인해 주세요)');
+                alert('사진 업로드 실패: ' + error.message);
                 syncStatus.value = '업로드 실패 ❌';
                 girlObj.isUploading = false;
                 return;
@@ -785,7 +986,6 @@
               if (data && data.value) {
                 db.value = data.value.db || {};
                 
-                // 기존 데이터에 고유 id가 없으면 생성하여 부여 (안전장치)
                 masterGirls.value = (data.value.masterGirls || []).map(g => ({
                   id: g.id || ('g_' + Math.random().toString(36).substring(2, 9)),
                   ...g
@@ -1018,48 +1218,23 @@
             el.style.height = (el.scrollHeight) + 'px';
           };
 
-          const resizeTextareaByEnter = (event) => {
-            const el = event.target;
-            const val = el.value;
-            const lineCount = (val.match(/\n/g) || []).length + 1;
-            
-            if (lineCount <= 1) {
-              el.style.height = '28px';
-            } else {
-              el.style.height = 'auto';
-              el.style.height = Math.max(28, el.scrollHeight) + 'px';
-            }
-          };
-
-          const addStandaloneGirl = () => {
-            masterGirls.value.push({ 
-              id: 'g_' + Date.now() + Math.random().toString(36).substring(2, 7),
-              name: "", office: "사무실", type: "", memo: "", photoUrl: "" 
-            });
-            saveData();
-          };
-
           const removeStandaloneGirlOriginalIndex = (item) => {
-            const idx = masterGirls.value.indexOf(item);
-            if (idx > -1) {
-              masterGirls.value.splice(idx, 1);
-              saveData();
+            if (confirm(`"${item.name || '이름 없음'}" 접대원을 삭제하시겠습니까?`)) {
+              const idx = masterGirls.value.indexOf(item);
+              if (idx > -1) {
+                masterGirls.value.splice(idx, 1);
+                saveData();
+              }
             }
-          };
-
-          const addStandaloneCustomer = () => {
-            masterCustomers.value.push({ 
-              id: 'c_' + Date.now() + Math.random().toString(36).substring(2, 7),
-              name: "", type: "", memo: "" 
-            });
-            saveData();
           };
 
           const removeStandaloneCustomerOriginalIndex = (item) => {
-            const idx = masterCustomers.value.indexOf(item);
-            if (idx > -1) {
-              masterCustomers.value.splice(idx, 1);
-              saveData();
+            if (confirm(`"${item.name || '이름 없음'}" 손님을 삭제하시겠습니까?`)) {
+              const idx = masterCustomers.value.indexOf(item);
+              if (idx > -1) {
+                masterCustomers.value.splice(idx, 1);
+                saveData();
+              }
             }
           };
 
@@ -1173,7 +1348,7 @@
             }));
           });
 
-          // 접대원 개별 목록: 1순위 사무실 ㄱ-ㅎ, 2순위 이름 ㄱ-ㅎ 정렬
+          // 접대원 개별 목록: 1순위 사무실 ㄱ-ㅎ, 2순위 이름 ㄱ-ㅎ 자동 정렬
           const filteredGirls = computed(() => {
             const q = searchQuery.value.toLowerCase().trim();
             let list = [...masterGirls.value];
@@ -1206,7 +1381,7 @@
             return filteredGirls.value.slice(0, 5);
           });
 
-          // 손님 개별 목록: 이름 ㄱ-ㅎ 정렬 (입력 중 꼬임 방지를 위해 안정적 정렬 적용)
+          // 손님 개별 목록: 이름 ㄱ-ㅎ 자동 정렬
           const filteredCustomers = computed(() => {
             const q = searchQuery.value.toLowerCase().trim();
             let list = [...masterCustomers.value];
@@ -1309,12 +1484,14 @@
 
           return {
             theme, setTheme, selectedDate, searchQuery, currentDayData, saveData, addRoomCard, deleteRoom, addGirl, removeGirl, filteredRooms, filteredGirls, filteredCustomers,
-            todayTotalDrinks, monthTotalDrinks, calendarYear, calendarMonth, calendarDays, dailyRoomCountMap, prevMonth, nextMonth, selectDateFromCalendar, exportJSON, resizeTextarea, resizeTextareaByEnter, calculateGirlFee, calculateRoomTotalCash, calculateRoomTotalCard, formatKoreanFee,
-            addStandaloneGirl, removeStandaloneGirlOriginalIndex, addStandaloneCustomer, removeStandaloneCustomerOriginalIndex, totalAutoCash, totalAutoCard,
+            todayTotalDrinks, monthTotalDrinks, calendarYear, calendarMonth, calendarDays, dailyRoomCountMap, prevMonth, nextMonth, selectDateFromCalendar, exportJSON, resizeTextarea, calculateGirlFee, calculateRoomTotalCash, calculateRoomTotalCard, formatKoreanFee,
+            totalAutoCash, totalAutoCard,
             isLoggedIn, authError, authForm, handleLogin, handleLogout,
             roomQuickNavList, jumpToRoom, syncStatus, onExtraTypeChange,
             previewGirl, openPhotoModal, closePhotoModal, handlePhotoUpload, removeGirlPhoto,
-            isGirlsExpanded, isCustomersExpanded, displayedGirls, displayedCustomers
+            isGirlsExpanded, isCustomersExpanded, displayedGirls, displayedCustomers,
+            girlModal, openAddGirlModal, openEditGirlModal, closeGirlModal, saveGirlModal, removeStandaloneGirlOriginalIndex,
+            customerModal, openAddCustomerModal, openEditCustomerModal, closeCustomerModal, saveCustomerModal, removeStandaloneCustomerOriginalIndex
           };
         }
       }).mount('#app');

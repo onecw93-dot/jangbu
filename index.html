@@ -87,6 +87,156 @@
       </div>
     </div>
 
+    <!-- 🧾 손님용 계산서 팝업 모달 -->
+    <div v-if="invoiceModal.isOpen" @click.self="closeInvoiceModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
+      <div class="bg-white text-zinc-900 border border-zinc-300 p-5 sm:p-7 rounded-2xl shadow-2xl max-w-md w-full space-y-4 relative font-sans">
+        
+        <!-- 모달 상단 컨트롤 및 닫기 -->
+        <div class="flex justify-between items-center border-b border-zinc-200 pb-3">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-bold bg-zinc-100 text-zinc-700 px-2.5 py-1 rounded border border-zinc-200">
+              기준: 
+              <button @click="invoiceModal.mode = 'cash'" :class="invoiceModal.mode === 'cash' ? 'text-emerald-600 font-extrabold underline' : 'text-zinc-400'" class="ml-1">현금가</button> / 
+              <button @click="invoiceModal.mode = 'card'" :class="invoiceModal.mode === 'card' ? 'text-orange-500 font-extrabold underline' : 'text-zinc-400'">카드가</button>
+            </span>
+          </div>
+          <button @click="closeInvoiceModal" class="text-zinc-400 hover:text-zinc-900 text-xl font-bold px-2">✕</button>
+        </div>
+
+        <!-- 계산서 영수증 본문 양식 -->
+        <div class="bg-zinc-50 border border-zinc-300 p-4 sm:p-5 rounded-xl space-y-4 shadow-inner">
+          
+          <!-- 타이틀 및 방 번호 / 일자 -->
+          <div class="text-center space-y-1 border-b-2 border-zinc-800 pb-3">
+            <h2 class="text-xl sm:text-2xl font-black tracking-widest text-zinc-950">계 산 서</h2>
+            <div class="flex justify-between items-center text-xs font-semibold text-zinc-600 pt-1 px-1">
+              <span>Room No : <strong class="text-zinc-900 text-sm font-mono">{{ invoiceModal.room._originalRef.no }}</strong></span>
+              <span class="text-[11px] text-zinc-500">일자: {{ invoiceModal.room._date }}</span>
+            </div>
+          </div>
+
+          <!-- 품명 / 단가 / 수량 / 금액 테이블 -->
+          <div class="space-y-1.5 text-xs">
+            <div class="grid grid-cols-12 gap-1 font-bold text-center border-b border-zinc-300 pb-1.5 text-zinc-700">
+              <div class="col-span-5 text-left pl-1">품 명</div>
+              <div class="col-span-3 text-right">단 가</div>
+              <div class="col-span-1 text-center">수량</div>
+              <div class="col-span-3 text-right pr-1">금 액</div>
+            </div>
+
+            <div class="divide-y divide-zinc-200 min-h-[130px] space-y-1">
+              <!-- 주류 항목 -->
+              <div v-if="invoiceModal.room._originalRef.drinkQty > 0" class="grid grid-cols-12 gap-1 items-center pt-1">
+                <div class="col-span-5 text-left pl-1 font-semibold text-zinc-900 truncate">
+                  {{ invoiceModal.room._originalRef.drinkType === '소맥' ? '소맥' : '양주 ' + invoiceModal.room._originalRef.drinkType }}
+                  <span v-if="invoiceModal.room._originalRef.serviceQty > 0" class="text-[10px] text-rose-600 block">
+                    (서비스 {{ invoiceModal.room._originalRef.serviceQty }}병 차감)
+                  </span>
+                </div>
+                <div class="col-span-3 text-right font-mono text-zinc-600">
+                  {{ (invoiceModal.mode === 'cash' ? getDrinkCashUnitPrice(invoiceModal.room._originalRef.drinkType) : getDrinkCardUnitPrice(invoiceModal.room._originalRef.drinkType)).toLocaleString() }}
+                </div>
+                <div class="col-span-1 text-center font-bold text-zinc-900">
+                  {{ Math.max(0, invoiceModal.room._originalRef.drinkQty - (invoiceModal.room._originalRef.serviceQty || 0)) }}
+                </div>
+                <div class="col-span-3 text-right font-mono font-bold text-zinc-950 pr-1">
+                  {{ getDrinkTotalPrice(invoiceModal.room._originalRef, invoiceModal.mode).toLocaleString() }}
+                </div>
+              </div>
+
+              <!-- 봉사료 (동일 시간별 자동 그룹화) -->
+              <template v-for="(grp, gIdx) in groupedServiceFees" :key="'svc_'+gIdx">
+                <div class="grid grid-cols-12 gap-1 items-center pt-1">
+                  <div class="col-span-5 text-left pl-1 font-semibold text-zinc-900 truncate">
+                    봉사료 ({{ grp.count }}명 {{ grp.timeLabel }})
+                  </div>
+                  <div class="col-span-3 text-right font-mono text-zinc-600">
+                    {{ grp.unitFee.toLocaleString() }}
+                  </div>
+                  <div class="col-span-1 text-center font-bold text-zinc-900">
+                    {{ grp.count }}
+                  </div>
+                  <div class="col-span-3 text-right font-mono font-bold text-zinc-950 pr-1">
+                    {{ grp.totalFee.toLocaleString() }}
+                  </div>
+                </div>
+              </template>
+
+              <!-- M (개인비) 인원수 자동 그룹화 -->
+              <div v-if="groupedPersonalFeeCount > 0" class="grid grid-cols-12 gap-1 items-center pt-1">
+                <div class="col-span-5 text-left pl-1 font-semibold text-zinc-900 truncate">
+                  개인비 ({{ groupedPersonalFeeCount }}명)
+                </div>
+                <div class="col-span-3 text-right font-mono text-zinc-600">200,000</div>
+                <div class="col-span-1 text-center font-bold text-zinc-900">{{ groupedPersonalFeeCount }}</div>
+                <div class="col-span-3 text-right font-mono font-bold text-zinc-950 pr-1">
+                  {{ (groupedPersonalFeeCount * 200000).toLocaleString() }}
+                </div>
+              </div>
+
+              <!-- RT 항목 (체크된 경우) -->
+              <div v-if="invoiceModal.room._originalRef.rtChecked" class="grid grid-cols-12 gap-1 items-center pt-1">
+                <div class="col-span-5 text-left pl-1 font-semibold text-zinc-900">RT</div>
+                <div class="col-span-3 text-right font-mono text-zinc-600">20,000</div>
+                <div class="col-span-1 text-center font-bold text-zinc-900">1</div>
+                <div class="col-span-3 text-right font-mono font-bold text-zinc-950 pr-1">20,000</div>
+              </div>
+
+              <!-- 모텔비 개수 그룹화 표시 -->
+              <div v-if="invoiceModal.room._originalRef.motelFee > 0" class="grid grid-cols-12 gap-1 items-center pt-1">
+                <div class="col-span-5 text-left pl-1 font-semibold text-zinc-900">
+                  모텔비 ({{ invoiceModal.room._originalRef.motelQty || 1 }}개)
+                </div>
+                <div class="col-span-3 text-right font-mono text-zinc-600">
+                  {{ (invoiceModal.mode === 'cash' ? 50000 : 100000).toLocaleString() }}
+                </div>
+                <div class="col-span-1 text-center font-bold text-zinc-900">{{ invoiceModal.room._originalRef.motelQty || 1 }}</div>
+                <div class="col-span-3 text-right font-mono font-bold text-zinc-950 pr-1">
+                  {{ ((invoiceModal.mode === 'cash' ? 50000 : 100000) * (invoiceModal.room._originalRef.motelQty || 1)).toLocaleString() }}
+                </div>
+              </div>
+
+              <!-- 추가 현금/팁 항목 -->
+              <div v-if="invoiceModal.room._originalRef.extraType && invoiceModal.room._originalRef.extraAmount > 0" class="grid grid-cols-12 gap-1 items-center pt-1">
+                <div class="col-span-5 text-left pl-1 font-semibold text-zinc-900">추가 ({{ invoiceModal.room._originalRef.extraType }})</div>
+                <div class="col-span-3 text-right font-mono text-zinc-600">-</div>
+                <div class="col-span-1 text-center font-bold text-zinc-900">1</div>
+                <div class="col-span-3 text-right font-mono font-bold text-zinc-950 pr-1">
+                  {{ Number(invoiceModal.room._originalRef.extraAmount).toLocaleString() }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 합계 영역 -->
+          <div class="border-t-2 border-zinc-800 pt-2 flex justify-between items-center px-1">
+            <span class="font-extrabold text-sm text-zinc-900">합 계 ({{ invoiceModal.mode === 'cash' ? '현금가' : '카드가' }})</span>
+            <span class="text-lg font-black font-mono text-rose-600">
+              ₩{{ (invoiceModal.mode === 'cash' ? calculateRoomTotalCash(invoiceModal.room._originalRef) : calculateRoomTotalCard(invoiceModal.room._originalRef)).toLocaleString() }}
+            </span>
+          </div>
+
+          <!-- 하단 상호명 및 계좌번호 -->
+          <div class="border-t border-zinc-300 pt-3 space-y-2 text-center text-[11px] text-zinc-600">
+            <div class="font-bold text-sm tracking-widest text-zinc-900">
+              고구려 풀 노래주점
+            </div>
+            <div class="space-y-0.5 font-mono text-zinc-700 text-[11px] bg-zinc-100 p-2 rounded border border-zinc-200">
+              <div>농협 3020 6903 78581 <span class="font-bold text-zinc-900">황재동</span></div>
+              <div>토스뱅크 1000 3073 4410 <span class="font-bold text-zinc-900">황재동</span></div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="flex gap-2 pt-1">
+          <button @click="closeInvoiceModal" class="w-full py-2.5 bg-zinc-800 hover:bg-zinc-900 text-white font-bold rounded-lg text-xs transition shadow">
+            닫기
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- 🖼️ 접대원 프로필 이미지 크게 보기 모달 -->
     <div v-if="previewGirl" @click.self="closePhotoModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div class="bg-white dark:bg-darkCard border border-zinc-200 dark:border-darkBorder p-4 sm:p-5 rounded-2xl shadow-2xl max-w-md w-full space-y-4">
@@ -244,7 +394,7 @@
         </div>
 
         <div class="bg-zinc-200/70 dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder px-6 py-1.5 rounded-lg shadow-inner">
-          <span class="text-sm sm:text-base font-bold tracking-widest text-customOrange font-mono">- 운수 대통 -</span>
+          <span class="text-sm sm:text-base font-bold tracking-widest text-customOrange font-mono">- 고구려 풀 노래주점 -</span>
         </div>
 
         <div class="flex items-center gap-1.5 sm:gap-2 w-full md:w-auto justify-end">
@@ -359,7 +509,13 @@
                 </select>
                 <span class="text-xs text-zinc-400">테이블</span>
               </div>
-              <button @click="deleteRoom(roomWrap)" class="text-xs text-rose-500 hover:text-rose-400 font-bold p-1">삭제</button>
+              <div class="flex items-center gap-2">
+                <!-- 🧾 계산서 보기 버튼 -->
+                <button @click="openInvoiceModal(roomWrap)" class="text-xs bg-customOrange hover:bg-orange-600 text-zinc-950 font-bold px-2.5 py-1 rounded transition shadow-sm">
+                  🧾 계산서 보기
+                </button>
+                <button @click="deleteRoom(roomWrap)" class="text-xs text-rose-500 hover:text-rose-400 font-bold p-1">삭제</button>
+              </div>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 text-xs">
@@ -804,6 +960,64 @@
 
           const previewGirl = ref(null);
 
+          // 계산서 모달 상태
+          const invoiceModal = ref({
+            isOpen: false,
+            room: null,
+            mode: 'cash' // 'cash' 또는 'card'
+          });
+
+          const openInvoiceModal = (roomWrap) => {
+            invoiceModal.value = {
+              isOpen: true,
+              room: roomWrap,
+              mode: 'cash'
+            };
+          };
+
+          const closeInvoiceModal = () => {
+            invoiceModal.value.isOpen = false;
+          };
+
+          // 접대원 시간별 봉사료 자동 그룹화
+          const groupedServiceFees = computed(() => {
+            if (!invoiceModal.value.isOpen || !invoiceModal.value.room) return [];
+            const girls = invoiceModal.value.room._originalRef.girls || [];
+            const map = new Map();
+
+            girls.forEach(g => {
+              const fee = calculateGirlFee(g);
+              if (fee <= 0) return;
+
+              let parts = [];
+              if (g.tc) parts.push(g.tc);
+              if (g.tc2) parts.push(g.tc2);
+              const timeLabel = parts.join('');
+              const key = `${timeLabel}_${fee}`;
+
+              if (!map.has(key)) {
+                map.set(key, {
+                  timeLabel,
+                  unitFee: fee,
+                  count: 0,
+                  totalFee: 0
+                });
+              }
+              const item = map.get(key);
+              item.count += 1;
+              item.totalFee += fee;
+            });
+
+            return Array.from(map.values());
+          });
+
+          // 개인비(M) 체크된 인원수 합산
+          const groupedPersonalFeeCount = computed(() => {
+            if (!invoiceModal.value.isOpen || !invoiceModal.value.room) return 0;
+            const girls = invoiceModal.value.room._originalRef.girls || [];
+            return girls.filter(g => g.checked).length;
+          });
+
           // 접대원 등록/수정 모달 상태
           const girlModal = ref({
             isOpen: false,
@@ -1137,12 +1351,29 @@
             };
             total += parseValue(g.tc);
             total += parseValue(g.tc2);
-
-            if (g.checked) {
-              total += 200000;
-            }
-
             return total;
+          };
+
+          const getDrinkCashUnitPrice = (drinkType) => {
+            if (drinkType === '12년') return 120000;
+            if (drinkType === '17년') return 170000;
+            if (drinkType === '소맥') return 100000;
+            return 0;
+          };
+
+          const getDrinkCardUnitPrice = (drinkType) => {
+            if (drinkType === '12년') return 150000;
+            if (drinkType === '17년') return 200000;
+            if (drinkType === '소맥') return 130000;
+            return 0;
+          };
+
+          const getDrinkTotalPrice = (r, mode) => {
+            const qty = Number(r.drinkQty) || 0;
+            const serviceQty = Number(r.serviceQty) || 0;
+            const unitPrice = mode === 'cash' ? getDrinkCashUnitPrice(r.drinkType) : getDrinkCardUnitPrice(r.drinkType);
+            const payableQty = Math.max(0, qty - serviceQty);
+            return unitPrice * payableQty;
           };
 
           const onExtraTypeChange = (roomObj) => {
@@ -1158,6 +1389,7 @@
             if (r.girls && Array.isArray(r.girls)) {
               r.girls.forEach(g => {
                 extra += calculateGirlFee(g);
+                if (g.checked) extra += 200000;
               });
             }
             if (r.extraType && Number(r.extraAmount) > 0) {
@@ -1175,9 +1407,9 @@
             else if (r.drinkType === '17년') drinkPrice = 170000;
             else if (r.drinkType === '소맥') drinkPrice = 100000;
 
-            const motelUnit = (Number(r.motelFee) === 50000) ? 50000 : 0;
+            const motelUnit = 50000;
             const motelQty = Number(r.motelQty) || 1;
-            const totalMotel = motelUnit * motelQty;
+            const totalMotel = (r.motelFee > 0) ? (motelUnit * motelQty) : 0;
 
             const payableQty = Math.max(0, qty - serviceQty);
 
@@ -1193,9 +1425,9 @@
             else if (r.drinkType === '17년') drinkPrice = 200000;
             else if (r.drinkType === '소맥') drinkPrice = 130000;
 
-            const motelUnit = (Number(r.motelFee) === 100000) ? 100000 : 0;
+            const motelUnit = 100000;
             const motelQty = Number(r.motelQty) || 1;
-            const totalMotel = motelUnit * motelQty;
+            const totalMotel = (r.motelFee > 0) ? (motelUnit * motelQty) : 0;
 
             const payableQty = Math.max(0, qty - serviceQty);
 
@@ -1348,7 +1580,6 @@
             }));
           });
 
-          // 접대원 개별 목록: 1순위 사무실 ㄱ-ㅎ, 2순위 이름 ㄱ-ㅎ 자동 정렬
           const filteredGirls = computed(() => {
             const q = searchQuery.value.toLowerCase().trim();
             let list = [...masterGirls.value];
@@ -1381,7 +1612,6 @@
             return filteredGirls.value.slice(0, 5);
           });
 
-          // 손님 개별 목록: 이름 ㄱ-ㅎ 자동 정렬
           const filteredCustomers = computed(() => {
             const q = searchQuery.value.toLowerCase().trim();
             let list = [...masterCustomers.value];
@@ -1491,7 +1721,9 @@
             previewGirl, openPhotoModal, closePhotoModal, handlePhotoUpload, removeGirlPhoto,
             isGirlsExpanded, isCustomersExpanded, displayedGirls, displayedCustomers,
             girlModal, openAddGirlModal, openEditGirlModal, closeGirlModal, saveGirlModal, removeStandaloneGirlOriginalIndex,
-            customerModal, openAddCustomerModal, openEditCustomerModal, closeCustomerModal, saveCustomerModal, removeStandaloneCustomerOriginalIndex
+            customerModal, openAddCustomerModal, openEditCustomerModal, closeCustomerModal, saveCustomerModal, removeStandaloneCustomerOriginalIndex,
+            invoiceModal, openInvoiceModal, closeInvoiceModal, getDrinkCashUnitPrice, getDrinkCardUnitPrice, getDrinkTotalPrice,
+            groupedServiceFees, groupedPersonalFeeCount
           };
         }
       }).mount('#app');

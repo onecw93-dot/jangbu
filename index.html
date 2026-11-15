@@ -965,10 +965,10 @@
 
       </section>
 
-      <!-- 일일 매출/매입 수기 정산표 -->
+      <!-- 일일 매출/매입 수기 정산표 및 현황 섹션 -->
       <section class="bg-white dark:bg-darkCard border border-zinc-200 dark:border-darkBorder p-4 sm:p-5 rounded-xl shadow-sm space-y-3">
         
-        <!-- 🏢 사무실별 & '사무실' 소속 인원 개별 정산 현황 -->
+        <!-- 🏢 1. 사무실별 & '사무실' 소속 인원 개별 정산 현황 -->
         <div class="bg-zinc-50 dark:bg-[#202020] p-3.5 rounded-lg border border-zinc-200 dark:border-darkBorder text-xs space-y-2">
           <div class="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-700 pb-1.5">
             <span class="font-bold text-zinc-200">[ 사무실별 접대원 당일 정산 현황 ({{ currentStoreTab }} • {{ selectedDate }}) ]</span>
@@ -1001,50 +1001,7 @@
           </div>
         </div>
 
-        <div class="flex justify-between items-center border-b border-zinc-200 dark:border-darkBorder pb-2 pt-2">
-          <h3 class="text-xs font-bold text-zinc-300 tracking-wider">DAILY BALANCE ({{ currentStoreTab }} • {{ selectedDate }} 일일 매출 / 매입 수기 정산표)</h3>
-          <span class="text-[10px] text-accent">* 상단 테이블 결제금액이 현금/카드 매출에 자동 반영됩니다.</span>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
-          <div class="space-y-2 bg-zinc-50 dark:bg-[#202020] p-3.5 rounded-lg border border-zinc-200 dark:border-darkBorder">
-            <span class="font-bold text-accent block border-b border-zinc-700 pb-1">[ 매출 항목 ]</span>
-            <div class="flex items-center justify-between">
-              <span class="text-zinc-400">현금 매출 (테이블 자동 + 수동):</span>
-              <input type="number" v-model.number="currentDayData.mCash" @input="saveData" class="p-1 rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-right w-32 font-mono text-zinc-100 outline-none">
-            </div>
-            <div class="flex items-center justify-between">
-              <span class="text-zinc-400">카드 매출 (테이블 자동 + 수동):</span>
-              <input type="number" v-model.number="currentDayData.mCard" @input="saveData" class="p-1 rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-right w-32 font-mono text-zinc-100 outline-none">
-            </div>
-            <div class="flex items-center justify-between">
-              <span class="text-rose-400">외상 발생:</span>
-              <input type="number" v-model.number="currentDayData.mCredit" @input="saveData" class="p-1 rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-right w-32 font-mono text-rose-400 outline-none">
-            </div>
-            <div class="flex items-center justify-between pt-2 border-t border-zinc-700 font-bold">
-              <span>매출 합계:</span>
-              <span class="text-accent font-mono text-sm">₩{{ (totalAutoCash + totalAutoCard + (currentDayData.mCredit || 0)).toLocaleString() }}</span>
-            </div>
-          </div>
-
-          <div class="space-y-2 bg-zinc-50 dark:bg-[#202020] p-3.5 rounded-lg border border-zinc-200 dark:border-darkBorder">
-            <span class="font-bold text-customOrange block border-b border-zinc-700 pb-1">[ 매입 / 지출 항목 ]</span>
-            <div class="flex items-center justify-between">
-              <span class="text-zinc-400">현금 지출:</span>
-              <input type="number" v-model.number="currentDayData.pCash" @input="saveData" class="p-1 rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-right w-32 font-mono text-zinc-100 outline-none">
-            </div>
-            <div class="flex items-center justify-between">
-              <span class="text-zinc-400">카드 지출:</span>
-              <input type="number" v-model.number="currentDayData.pCard" @input="saveData" class="p-1 rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-right w-32 font-mono text-zinc-100 outline-none">
-            </div>
-            <div class="flex items-center justify-between pt-6 border-t border-zinc-700 font-bold">
-              <span>매입 합계:</span>
-              <span class="text-customOrange font-mono text-sm">₩{{ ((currentDayData.pCash || 0) + (currentDayData.pCard || 0)).toLocaleString() }}</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 모텔(M) · 개인비(P) 결제 주체별 정산 통계 -->
+        <!-- 🏨 2. 모텔(M) · 개인비(P) 결제 주체별 정산 통계 -->
         <div class="bg-zinc-50 dark:bg-[#202020] p-3.5 rounded-lg border border-zinc-200 dark:border-darkBorder text-xs space-y-2">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-zinc-200 dark:border-zinc-700 pb-1.5 gap-1">
             <span class="font-bold text-zinc-200">[ 모텔(M) · 접대원 개인비(P) 결제 주체별 정산 현황 ]</span>
@@ -1086,6 +1043,50 @@
                 <span class="text-[10px] text-zinc-400">총 {{ dailyMPStats.personalCustomerCount }}건</span>
               </div>
               <span class="font-mono font-bold text-zinc-300 text-xs">₩{{ dailyMPStats.personalCustomerAmount.toLocaleString() }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 💰 3. DAILY BALANCE 일일 매출 / 매입 수기 정산표 -->
+        <div class="flex justify-between items-center border-b border-zinc-200 dark:border-darkBorder pb-2 pt-2">
+          <h3 class="text-xs font-bold text-zinc-300 tracking-wider">DAILY BALANCE ({{ currentStoreTab }} • {{ selectedDate }} 일일 매출 / 매입 수기 정산표)</h3>
+          <span class="text-[10px] text-accent">* 상단 테이블 결제금액이 현금/카드 매출에 자동 반영됩니다.</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
+          <div class="space-y-2 bg-zinc-50 dark:bg-[#202020] p-3.5 rounded-lg border border-zinc-200 dark:border-darkBorder">
+            <span class="font-bold text-accent block border-b border-zinc-700 pb-1">[ 매출 항목 ]</span>
+            <div class="flex items-center justify-between">
+              <span class="text-zinc-400">현금 매출 (테이블 자동 + 수동):</span>
+              <input type="number" v-model.number="currentDayData.mCash" @input="saveData" class="p-1 rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-right w-32 font-mono text-zinc-100 outline-none">
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-zinc-400">카드 매출 (테이블 자동 + 수동):</span>
+              <input type="number" v-model.number="currentDayData.mCard" @input="saveData" class="p-1 rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-right w-32 font-mono text-zinc-100 outline-none">
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-rose-400">외상 발생:</span>
+              <input type="number" v-model.number="currentDayData.mCredit" @input="saveData" class="p-1 rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-right w-32 font-mono text-rose-400 outline-none">
+            </div>
+            <div class="flex items-center justify-between pt-2 border-t border-zinc-700 font-bold">
+              <span>매출 합계:</span>
+              <span class="text-accent font-mono text-sm">₩{{ (totalAutoCash + totalAutoCard + (currentDayData.mCredit || 0)).toLocaleString() }}</span>
+            </div>
+          </div>
+
+          <div class="space-y-2 bg-zinc-50 dark:bg-[#202020] p-3.5 rounded-lg border border-zinc-200 dark:border-darkBorder">
+            <span class="font-bold text-customOrange block border-b border-zinc-700 pb-1">[ 매입 / 지출 항목 ]</span>
+            <div class="flex items-center justify-between">
+              <span class="text-zinc-400">현금 지출:</span>
+              <input type="number" v-model.number="currentDayData.pCash" @input="saveData" class="p-1 rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-right w-32 font-mono text-zinc-100 outline-none">
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-zinc-400">카드 지출:</span>
+              <input type="number" v-model.number="currentDayData.pCard" @input="saveData" class="p-1 rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-right w-32 font-mono text-zinc-100 outline-none">
+            </div>
+            <div class="flex items-center justify-between pt-6 border-t border-zinc-700 font-bold">
+              <span>매입 합계:</span>
+              <span class="text-customOrange font-mono text-sm">₩{{ ((currentDayData.pCash || 0) + (currentDayData.pCard || 0)).toLocaleString() }}</span>
             </div>
           </div>
         </div>
@@ -1377,9 +1378,8 @@
           const totalStoreMotelCountForInvoice = computed(() => {
             if (!invoiceModal.value.isOpen || !invoiceModal.value.room) return 0;
             const r = invoiceModal.value.room._originalRef;
-            const legacyRoomMotelCount = (Number(r.motelFee) > 0) ? (Number(r.motelQty) || 1) : 0;
             const girlStoreMotelCount = (r.girls || []).filter(g => getGirlMotelPay(g) === 'store').length;
-            return legacyRoomMotelCount + girlStoreMotelCount;
+            return girlStoreMotelCount;
           });
 
           const girlModal = ref({
@@ -1725,12 +1725,6 @@
 
             if (currentDayData.value && currentDayData.value.rooms) {
               currentDayData.value.rooms.forEach(r => {
-                if (Number(r.motelFee) > 0) {
-                  const qty = Number(r.motelQty) || 1;
-                  stats.motelStoreCount += qty;
-                  stats.motelStoreAmount += 50000 * qty;
-                }
-
                 if (r.girls && Array.isArray(r.girls)) {
                   r.girls.forEach(g => {
                     const mPay = getGirlMotelPay(g);
@@ -1882,8 +1876,6 @@
 
             const motelUnit = 50000;
             const personalUnit = 200000;
-            const motelQty = Number(r.motelQty) || 1;
-            const legacyRoomMotel = (Number(r.motelFee) > 0) ? (motelUnit * motelQty) : 0;
 
             let girlStoreMotel = 0;
             let girlStorePersonal = 0;
@@ -1897,7 +1889,7 @@
             const payableQty = Math.max(0, qty - serviceQty);
             const dc = Number(r.dcAmount) || 0;
 
-            const subtotal = (drinkPrice * payableQty) + getCommonExtraFee(r) + legacyRoomMotel + girlStoreMotel + girlStorePersonal;
+            const subtotal = (drinkPrice * payableQty) + getCommonExtraFee(r) + girlStoreMotel + girlStorePersonal;
             return Math.max(0, subtotal - dc);
           };
 
@@ -1912,8 +1904,6 @@
 
             const motelUnit = 50000;
             const personalUnit = 250000;
-            const motelQty = Number(r.motelQty) || 1;
-            const legacyRoomMotel = (Number(r.motelFee) > 0) ? (motelUnit * motelQty) : 0;
 
             let girlStoreMotel = 0;
             let girlStorePersonal = 0;
@@ -1927,7 +1917,7 @@
             const payableQty = Math.max(0, qty - serviceQty);
             const dc = Number(r.dcAmount) || 0;
 
-            const subtotal = (drinkPrice * payableQty) + getCommonExtraFee(r) + legacyRoomMotel + girlStoreMotel + girlStorePersonal;
+            const subtotal = (drinkPrice * payableQty) + getCommonExtraFee(r) + girlStoreMotel + girlStorePersonal;
             return Math.max(0, subtotal - dc);
           };
 
@@ -1970,7 +1960,7 @@
           const addRoomCard = () => {
             currentDayData.value.rooms.push({
               _id: Date.now() + Math.random(),
-              no: "1T", customer: "", status: "완료", rtChecked: true, motelFee: 0, motelQty: 1, extraType: "", extraAmount: 0, drinkType: "12년", drinkQty: 1, serviceQty: 0, dcAmount: 0, price: 0, payMethod: "현금", price2: 0, payMethod2: "카드", note: "", girls: []
+              no: "1T", customer: "", status: "완료", rtChecked: true, extraType: "", extraAmount: 0, drinkType: "12년", drinkQty: 1, serviceQty: 0, dcAmount: 0, price: 0, payMethod: "현금", price2: 0, payMethod2: "카드", note: "", girls: []
             });
             saveData();
           };

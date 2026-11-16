@@ -733,13 +733,65 @@
         <!-- 왼쪽: 접대원 현황판 -->
         <div class="bg-white dark:bg-darkCard border border-zinc-200 dark:border-darkBorder p-4 sm:p-5 rounded-xl shadow-sm space-y-3 flex flex-col justify-between" v-show="!searchQuery.trim() || filteredGirls.length > 0">
           <div>
-            <div class="flex justify-between items-center pb-2 border-b border-zinc-200 dark:border-darkBorder mb-3">
+            <div class="flex justify-between items-center pb-2 border-b border-zinc-200 dark:border-darkBorder mb-2.5">
               <div class="flex items-center gap-2">
                 <h3 class="text-xs font-bold text-customOrange tracking-wider">👩‍💼 접대원 개별 목록 관리 현황판</h3>
                 <span class="text-[10px] bg-customOrange/10 text-customOrange px-2 py-0.5 rounded font-bold">총 {{ filteredGirls.length }}명</span>
               </div>
               <button @click="openAddGirlModal" class="text-xs bg-customOrange hover:bg-orange-600 text-zinc-950 font-bold px-3 py-1 rounded transition shadow-sm">
                 + 접대원 추가
+              </button>
+            </div>
+
+            <!-- 🔍 사무실 / 구분 필터 바 -->
+            <div class="flex flex-wrap items-center justify-between gap-2 pb-2.5 mb-2.5 border-b border-zinc-200/70 dark:border-darkBorder/70">
+              <div class="flex flex-wrap items-center gap-1.5">
+                <!-- 사무실 필터 선택 -->
+                <select v-model="girlFilterOffice" class="px-2 py-1 text-[11px] rounded-lg bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-customOrange font-semibold outline-none focus:border-accent cursor-pointer">
+                  <option value="전체">사무실: 전체</option>
+                  <option value="사무실">사무실</option>
+                  <option value="거성">거성</option>
+                  <option value="대한">대한</option>
+                  <option value="비비">비비</option>
+                  <option value="여우">여우</option>
+                  <option value="타임">타임</option>
+                  <option value="패밀리">패밀리</option>
+                  <option value="하이디">하이디</option>
+                  <option value="현대">현대</option>
+                  <option value="퀸">퀸</option>
+                </select>
+
+                <!-- 시간 / 개인 구분 필터 버튼 그룹 -->
+                <div class="flex items-center bg-zinc-100 dark:bg-[#1a1a1a] p-0.5 rounded-lg border border-zinc-300 dark:border-darkBorder">
+                  <button
+                    type="button"
+                    @click="girlFilterType = '전체'"
+                    :class="girlFilterType === '전체' ? 'bg-accent text-zinc-950 font-bold shadow-sm' : 'text-zinc-400 hover:text-zinc-200'"
+                    class="px-2 py-0.5 rounded text-[11px] transition"
+                  >전체</button>
+                  <button
+                    type="button"
+                    @click="girlFilterType = '시간'"
+                    :class="girlFilterType === '시간' ? 'bg-accent text-zinc-950 font-bold shadow-sm' : 'text-zinc-400 hover:text-zinc-200'"
+                    class="px-2 py-0.5 rounded text-[11px] transition"
+                  >시간</button>
+                  <button
+                    type="button"
+                    @click="girlFilterType = '개인'"
+                    :class="girlFilterType === '개인' ? 'bg-accent text-zinc-950 font-bold shadow-sm' : 'text-zinc-400 hover:text-zinc-200'"
+                    class="px-2 py-0.5 rounded text-[11px] transition"
+                  >개인</button>
+                </div>
+              </div>
+
+              <!-- 필터 초기화 버튼 (필터 적용 중일 때만 표시) -->
+              <button
+                v-if="girlFilterOffice !== '전체' || girlFilterType !== '전체'"
+                type="button"
+                @click="resetGirlFilters"
+                class="text-[11px] text-zinc-400 hover:text-rose-400 underline px-1 transition"
+              >
+                필터 초기화
               </button>
             </div>
 
@@ -774,12 +826,12 @@
               </div>
 
               <div v-if="filteredGirls.length === 0" class="py-6 text-center text-zinc-500 text-xs">
-                등록된 접대원이 없습니다.
+                {{ (girlFilterOffice !== '전체' || girlFilterType !== '전체' || searchQuery.trim()) ? '조건에 맞는 접대원이 없습니다.' : '등록된 접대원이 없습니다.' }}
               </div>
             </div>
 
-            <!-- 접기 / 펼치기 버튼 (5명 초과 시) -->
-            <div v-if="filteredGirls.length > 5 && !searchQuery.trim()" class="pt-2 text-center">
+            <!-- 접기 / 펼치기 버튼 (5명 초과 시, 필터 미적용 상태에서만) -->
+            <div v-if="filteredGirls.length > 5 && !searchQuery.trim() && girlFilterOffice === '전체' && girlFilterType === '전체'" class="pt-2 text-center">
               <button @click="isGirlsExpanded = !isGirlsExpanded" class="text-xs text-customOrange font-bold hover:underline py-1 px-3 bg-customOrange/10 rounded-lg transition">
                 {{ isGirlsExpanded ? '▲ 접기 (5명만 보기)' : `▼ 펼치기 (전체 ${filteredGirls.length}명 보기)` }}
               </button>
@@ -958,6 +1010,15 @@
 
           const isGirlsExpanded = ref(false);
           const isCustomersExpanded = ref(false);
+
+          // 접대원 개별 목록 필터 상태
+          const girlFilterOffice = ref('전체');
+          const girlFilterType = ref('전체');
+
+          const resetGirlFilters = () => {
+            girlFilterOffice.value = '전체';
+            girlFilterType.value = '전체';
+          };
 
           const previewGirl = ref(null);
 
@@ -1583,6 +1644,9 @@
 
           const filteredGirls = computed(() => {
             const q = searchQuery.value.toLowerCase().trim();
+            const officeFilter = girlFilterOffice.value;
+            const typeFilter = girlFilterType.value;
+
             let list = [...masterGirls.value];
             
             list.forEach(g => {
@@ -1597,17 +1661,26 @@
               return a.name.localeCompare(b.name, 'ko');
             });
 
-            if (!q) return list;
-            return list.filter(g => 
-              (g.name && g.name.toLowerCase().includes(q)) || 
-              (g.office && g.office.toLowerCase().includes(q)) ||
-              (g.memo && g.memo.toLowerCase().includes(q)) ||
-              (g.type && g.type.toLowerCase().includes(q))
-            );
+            return list.filter(g => {
+              const matchOffice = officeFilter === '전체' || (g.office || '사무실') === officeFilter;
+              const matchType = typeFilter === '전체' || (g.type || '') === typeFilter;
+              const matchSearch = !q || (
+                (g.name && g.name.toLowerCase().includes(q)) || 
+                (g.office && g.office.toLowerCase().includes(q)) ||
+                (g.memo && g.memo.toLowerCase().includes(q)) ||
+                (g.type && g.type.toLowerCase().includes(q))
+              );
+              return matchOffice && matchType && matchSearch;
+            });
           });
 
           const displayedGirls = computed(() => {
-            if (searchQuery.value.trim() || isGirlsExpanded.value) {
+            if (
+              searchQuery.value.trim() ||
+              isGirlsExpanded.value ||
+              girlFilterOffice.value !== '전체' ||
+              girlFilterType.value !== '전체'
+            ) {
               return filteredGirls.value;
             }
             return filteredGirls.value.slice(0, 5);
@@ -1721,6 +1794,7 @@
             roomQuickNavList, jumpToRoom, syncStatus, onExtraTypeChange,
             previewGirl, openPhotoModal, closePhotoModal, handlePhotoUpload, removeGirlPhoto,
             isGirlsExpanded, isCustomersExpanded, displayedGirls, displayedCustomers,
+            girlFilterOffice, girlFilterType, resetGirlFilters,
             girlModal, openAddGirlModal, openEditGirlModal, closeGirlModal, saveGirlModal, removeStandaloneGirlOriginalIndex,
             customerModal, openAddCustomerModal, openEditCustomerModal, closeCustomerModal, saveCustomerModal, removeStandaloneCustomerOriginalIndex,
             invoiceModal, openInvoiceModal, closeInvoiceModal, getDrinkCashUnitPrice, getDrinkCardUnitPrice, getDrinkTotalPrice,

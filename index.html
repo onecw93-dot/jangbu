@@ -156,35 +156,39 @@
                 </div>
               </template>
 
-              <div v-if="groupedPersonalFeeCount > 0" class="grid grid-cols-12 gap-1 items-center pt-1">
-                <div class="col-span-5 text-left pl-1 font-semibold text-zinc-900 truncate">
-                  개인비 ({{ groupedPersonalFeeCount }}명)
+              <!-- 손님 계산서에서는 '가게 계산(M○)'인 항목들만 계산서 합계에 포함 -->
+              <template v-for="(mg, mgIdx) in invoiceModalStoreMotelItems" :key="'inv_mg_'+mgIdx">
+                <div class="grid grid-cols-12 gap-1 items-center pt-1">
+                  <div class="col-span-5 text-left pl-1 font-semibold text-zinc-900 truncate">
+                    모텔비 ({{ mg.name || '접대원' }})
+                  </div>
+                  <div class="col-span-3 text-right font-mono text-zinc-600">
+                    {{ (invoiceModal.mode === 'cash' ? 50000 : 100000).toLocaleString() }}
+                  </div>
+                  <div class="col-span-1 text-center font-bold text-zinc-900">1</div>
+                  <div class="col-span-3 text-right font-mono font-bold text-zinc-950 pr-1">
+                    {{ (invoiceModal.mode === 'cash' ? 50000 : 100000).toLocaleString() }}
+                  </div>
                 </div>
-                <div class="col-span-3 text-right font-mono text-zinc-600">200,000</div>
-                <div class="col-span-1 text-center font-bold text-zinc-900">{{ groupedPersonalFeeCount }}</div>
-                <div class="col-span-3 text-right font-mono font-bold text-zinc-950 pr-1">
-                  {{ (groupedPersonalFeeCount * 200000).toLocaleString() }}
+              </template>
+
+              <!-- 손님 계산서에서는 '가게 계산(P○)'인 항목들만 계산서 합계에 포함 -->
+              <template v-for="(pg, pgIdx) in invoiceModalStorePersonalItems" :key="'inv_pg_'+pgIdx">
+                <div class="grid grid-cols-12 gap-1 items-center pt-1">
+                  <div class="col-span-5 text-left pl-1 font-semibold text-zinc-900 truncate">
+                    개인비 ({{ pg.name || '접대원' }})
+                  </div>
+                  <div class="col-span-3 text-right font-mono text-zinc-600">200,000</div>
+                  <div class="col-span-1 text-center font-bold text-zinc-900">1</div>
+                  <div class="col-span-3 text-right font-mono font-bold text-zinc-950 pr-1">200,000</div>
                 </div>
-              </div>
+              </template>
 
               <div v-if="invoiceModal.room._originalRef.rtChecked" class="grid grid-cols-12 gap-1 items-center pt-1">
                 <div class="col-span-5 text-left pl-1 font-semibold text-zinc-900">RT</div>
                 <div class="col-span-3 text-right font-mono text-zinc-600">20,000</div>
                 <div class="col-span-1 text-center font-bold text-zinc-900">1</div>
                 <div class="col-span-3 text-right font-mono font-bold text-zinc-950 pr-1">20,000</div>
-              </div>
-
-              <div v-if="invoiceModal.room._originalRef.motelFee > 0" class="grid grid-cols-12 gap-1 items-center pt-1">
-                <div class="col-span-5 text-left pl-1 font-semibold text-zinc-900">
-                  모텔비 ({{ invoiceModal.room._originalRef.motelQty || 1 }}개)
-                </div>
-                <div class="col-span-3 text-right font-mono text-zinc-600">
-                  {{ (invoiceModal.mode === 'cash' ? 50000 : 100000).toLocaleString() }}
-                </div>
-                <div class="col-span-1 text-center font-bold text-zinc-900">{{ invoiceModal.room._originalRef.motelQty || 1 }}</div>
-                <div class="col-span-3 text-right font-mono font-bold text-zinc-950 pr-1">
-                  {{ ((invoiceModal.mode === 'cash' ? 50000 : 100000) * (invoiceModal.room._originalRef.motelQty || 1)).toLocaleString() }}
-                </div>
               </div>
 
               <template v-for="(ex, exIdx) in (invoiceModal.room._originalRef.extras || [])" :key="'inv_ex_'+exIdx">
@@ -370,7 +374,7 @@
     <!-- 🌟 로그인 성공 시 열리는 메인 장부 UI -->
     <template v-else>
       
-      <!-- 헤더 영역 (중앙 슬림형 가게 전환 탭 배치 - 층수 및 운영중 제거) -->
+      <!-- 헤더 영역 -->
       <header class="flex flex-col md:flex-row justify-between items-center gap-3 pb-3 border-b border-zinc-200 dark:border-darkBorder">
         <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
           <h1 class="text-lg sm:text-xl font-bold tracking-wide flex items-center gap-2">
@@ -380,7 +384,7 @@
           </h1>
         </div>
 
-        <!-- 중앙 슬림 가게 전환 탭 (고구려 / 놀이터만 간결하게 배치) -->
+        <!-- 중앙 슬림 가게 전환 탭 -->
         <div class="flex items-center justify-center gap-1 bg-white dark:bg-darkCard p-1 rounded-lg border border-zinc-200 dark:border-darkBorder shadow-sm w-auto mx-auto">
           <button @click="switchVenue('gokugyeu')" 
                   :class="currentVenue === 'gokugyeu' ? 'bg-accent text-zinc-950 font-bold shadow-sm' : 'bg-transparent text-zinc-400 hover:text-zinc-200'"
@@ -411,7 +415,7 @@
         </div>
       </header>
 
-      <!-- 📱 모바일 & PC 겸용 방 번호 퀵 내비게이터 바 (왼쪽 끝 고정) -->
+      <!-- 📱 모바일 & PC 겸용 방 번호 퀵 내비게이터 바 -->
       <aside class="fixed left-1 sm:left-3 top-1/2 -translate-y-1/2 z-40 flex flex-col items-center gap-1 bg-white/85 dark:bg-darkCard/85 backdrop-blur-md border border-zinc-300 dark:border-darkBorder p-1 sm:p-1.5 rounded-xl shadow-xl max-h-[65vh] overflow-y-auto">
         <button @click="addRoomCard()" class="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-accent hover:bg-accentHover text-zinc-950 font-extrabold text-xs sm:text-sm flex items-center justify-center transition shadow-sm shrink-0" title="방 추가">
           +
@@ -482,12 +486,36 @@
             </div>
           </div>
 
-          <div class="bg-white dark:bg-darkCard border border-zinc-200 dark:border-darkBorder p-4 rounded-xl shadow-sm flex items-center justify-between flex-1">
-            <div>
-              <span class="text-[11px] sm:text-xs text-zinc-500 dark:text-zinc-400 block font-semibold">테이블 현황</span>
-              <span class="text-2xl font-bold font-mono text-accent mt-1 block">
-                {{ currentDayData.rooms.length }}개
-              </span>
+          <!-- M / P 결제 주체별 정산 현황판 -->
+          <div class="bg-white dark:bg-darkCard border border-zinc-200 dark:border-darkBorder p-4 rounded-xl shadow-sm flex flex-col justify-between flex-1 space-y-2">
+            <div class="flex items-center justify-between border-b border-zinc-200 dark:border-darkBorder pb-1.5">
+              <span class="text-[11px] sm:text-xs text-customOrange font-bold tracking-wider">[ 모텔(M) · 개인비(P) 결제 주체별 정산 현황 ]</span>
+              <span class="text-[10px] text-zinc-400">당일 영업기준</span>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-xs pt-1">
+              <div class="bg-zinc-50 dark:bg-[#1a1a1a] p-2 rounded border border-zinc-200 dark:border-darkBorder space-y-1">
+                <div class="font-bold text-rose-400 text-[11px]">모텔비 (M) 현황</div>
+                <div class="flex justify-between text-zinc-400">
+                  <span>가게 계산 (M○):</span>
+                  <strong class="text-accent font-mono">{{ todayMotelStoreCount }}건</strong>
+                </div>
+                <div class="flex justify-between text-zinc-400">
+                  <span>손님 직접 (M×):</span>
+                  <strong class="text-customOrange font-mono">{{ todayMotelCustomerCount }}건</strong>
+                </div>
+              </div>
+
+              <div class="bg-zinc-50 dark:bg-[#1a1a1a] p-2 rounded border border-zinc-200 dark:border-darkBorder space-y-1">
+                <div class="font-bold text-customOrange text-[11px]">개인비 (P) 현황</div>
+                <div class="flex justify-between text-zinc-400">
+                  <span>가게 계산 (P○):</span>
+                  <strong class="text-accent font-mono">{{ todayPersonalStoreCount }}건</strong>
+                </div>
+                <div class="flex justify-between text-zinc-400">
+                  <span>손님 직접 (P×):</span>
+                  <strong class="text-customOrange font-mono">{{ todayPersonalCustomerCount }}건</strong>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -542,32 +570,15 @@
                   <input type="text" v-model="roomWrap._originalRef.customer" @input="saveData" placeholder="손님 이름 / 특징" class="w-full p-2 rounded bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-darkBorder text-zinc-100 outline-none focus:border-accent">
                 </div>
 
-                <div class="flex flex-col gap-1.5 bg-zinc-50 dark:bg-[#1a1a1a] p-2 rounded border border-zinc-200 dark:border-darkBorder">
-                  <div class="flex items-center justify-between">
-                    <label class="flex items-center gap-1 cursor-pointer select-none">
-                      <input type="checkbox" v-model="roomWrap._originalRef.rtChecked" @change="saveData" class="w-3.5 h-3.5 accent-accent cursor-pointer">
-                      <span class="text-[10px] font-bold text-accent">RT (+2만)</span>
-                    </label>
-
-                    <div class="flex items-center gap-1">
-                      <span class="text-[10px] text-zinc-400">모텔비:</span>
-                      <select v-model.number="roomWrap._originalRef.motelFee" @change="saveData" class="p-1 rounded bg-white dark:bg-[#222] border border-zinc-300 dark:border-darkBorder text-customOrange font-bold text-[11px] outline-none">
-                        <option :value="0">없음</option>
-                        <option :value="50000">현금 (5만)</option>
-                        <option :value="100000">카드 (10만)</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div v-if="roomWrap._originalRef.motelFee > 0" class="flex items-center justify-between pt-1 border-t border-zinc-200 dark:border-zinc-800">
-                    <span class="text-[10px] text-zinc-400">모텔 횟수(개수):</span>
-                    <select v-model.number="roomWrap._originalRef.motelQty" @change="saveData" class="p-0.5 px-1.5 rounded bg-white dark:bg-[#222] border border-zinc-300 dark:border-darkBorder text-accent font-bold text-[11px] outline-none">
-                      <option v-for="n in 5" :key="n" :value="n">{{ n }}개</option>
-                    </select>
-                  </div>
+                <div class="flex items-center justify-between bg-zinc-50 dark:bg-[#1a1a1a] p-2 rounded border border-zinc-200 dark:border-darkBorder">
+                  <label class="flex items-center gap-1 cursor-pointer select-none">
+                    <input type="checkbox" v-model="roomWrap._originalRef.rtChecked" @change="saveData" class="w-3.5 h-3.5 accent-accent cursor-pointer">
+                    <span class="text-[10px] font-bold text-accent">RT (+2만)</span>
+                  </label>
+                  <span class="text-[10px] text-zinc-400">※ 모텔비·개인비는 아래 접대원별 M/P 버튼으로 설정</span>
                 </div>
 
-                <!-- 동적 추가 항목 영역 (담배, 음식, 현금, 팁 등 여러 개 추가 및 X 삭제 가능) -->
+                <!-- 동적 추가 항목 영역 -->
                 <div class="flex flex-col gap-1.5 bg-zinc-50 dark:bg-[#1a1a1a] p-2 rounded border border-zinc-200 dark:border-darkBorder">
                   <div class="flex justify-between items-center mb-1">
                     <span class="text-[10px] font-bold text-customOrange">추가 항목 (담배/음식/현금/팁)</span>
@@ -624,25 +635,30 @@
                 </div>
               </div>
 
-              <!-- 오른쪽 컬럼: 방 내 접대원 관리 영역 -->
+              <!-- 오른쪽 컬럼: 방 내 접대원 관리 영역 (M, P 독립 토글 버튼 체계) -->
               <div class="sm:col-span-7 space-y-1.5 bg-zinc-50/50 dark:bg-[#202020] p-2.5 rounded-lg border border-zinc-200 dark:border-darkBorder flex flex-col justify-between">
                 <div>
                   <div class="flex justify-between items-center mb-1.5">
-                    <label class="text-[10px] font-bold text-customOrange">접대원</label>
+                    <label class="text-[10px] font-bold text-customOrange">접대원 (M: 모텔 / P: 개인비 토글)</label>
                     <button @click="addGirl(roomWrap._originalRef)" class="text-[10px] bg-accent/20 text-accent px-1.5 py-0.5 rounded font-bold hover:bg-accent/30">+ 추가</button>
                   </div>
 
                   <div class="space-y-1.5 pr-0">
                     <div v-for="(g, gIdx) in roomWrap._originalRef.girls" :key="gIdx" class="flex gap-1 items-center min-w-0">
                       
-                      <div class="flex items-center gap-0.5 shrink-0 px-0.5">
-                        <span class="text-[11px] font-bold text-rose-500">M</span>
-                        <input type="checkbox" v-model="g.checked" @change="saveData" class="w-3.5 h-3.5 accent-rose-500 cursor-pointer">
-                      </div>
+                      <!-- M 버튼: 미선택(공백) ➔ M○(가게 계산) ➔ M×(손님 직접) 순환 -->
+                      <button type="button" @click="cycleGirlMotel(g)" :class="getMotelBtnClass(g.motelState)" class="px-1.5 py-1 text-[11px] font-extrabold rounded shrink-0 transition" :title="getMotelTitle(g.motelState)">
+                        {{ getMotelLabel(g.motelState) }}
+                      </button>
 
-                      <input type="text" v-model="g.name" @input="saveData" placeholder="이름" class="w-[16%] min-w-0 px-1 py-1 text-xs rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-darkBorder text-zinc-100 outline-none">
+                      <!-- P 버튼: 미선택(공백) ➔ P○(가게 계산) ➔ P×(손님 직접) 순환 -->
+                      <button type="button" @click="cycleGirlPersonal(g)" :class="getPersonalBtnClass(g.personalState)" class="px-1.5 py-1 text-[11px] font-extrabold rounded shrink-0 transition" :title="getPersonalTitle(g.personalState)">
+                        {{ getPersonalLabel(g.personalState) }}
+                      </button>
+
+                      <input type="text" v-model="g.name" @input="saveData" placeholder="이름" class="w-[14%] min-w-0 px-1 py-1 text-xs rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-darkBorder text-zinc-100 outline-none">
                       
-                      <select v-model="g.office" @change="saveData" class="w-[23%] min-w-0 px-0.5 py-1 text-[11px] rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-darkBorder text-customOrange font-semibold outline-none">
+                      <select v-model="g.office" @change="saveData" class="w-[20%] min-w-0 px-0.5 py-1 text-[11px] rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-darkBorder text-customOrange font-semibold outline-none">
                         <option value="사무실">사무실</option>
                         <option value="거성">거성</option>
                         <option value="대한">대한</option>
@@ -655,7 +671,7 @@
                         <option value="퀸">퀸</option>
                       </select>
 
-                      <select v-model="g.tc" @change="saveData" class="w-[16%] min-w-0 px-0.5 py-1 text-[11px] rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-darkBorder text-accent font-mono font-bold outline-none text-center">
+                      <select v-model="g.tc" @change="saveData" class="w-[15%] min-w-0 px-0.5 py-1 text-[11px] rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-darkBorder text-accent font-mono font-bold outline-none text-center">
                         <option value="">시간1</option>
                         <option value="+1">+1</option>
                         <option value="+2">+2</option>
@@ -669,7 +685,7 @@
                         <option value="6H">6H</option>
                       </select>
 
-                      <select v-model="g.tc2" @change="saveData" class="w-[16%] min-w-0 px-0.5 py-1 text-[11px] rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-darkBorder text-accent font-mono font-bold outline-none text-center">
+                      <select v-model="g.tc2" @change="saveData" class="w-[15%] min-w-0 px-0.5 py-1 text-[11px] rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-darkBorder text-accent font-mono font-bold outline-none text-center">
                         <option value="">시간2</option>
                         <option value="+1">+1</option>
                         <option value="+2">+2</option>
@@ -683,7 +699,7 @@
                         <option value="6H">6H</option>
                       </select>
 
-                      <span class="w-[16%] min-w-0 text-[11px] font-bold text-customOrange text-center truncate" :title="'시간비 합계: ' + formatKoreanFee(calculateGirlFee(g))">
+                      <span class="w-[15%] min-w-0 text-[11px] font-bold text-customOrange text-center truncate" :title="'시간비 합계: ' + formatKoreanFee(calculateGirlFee(g))">
                         {{ formatKoreanFee(calculateGirlFee(g)) }}
                       </span>
 
@@ -1010,7 +1026,6 @@
             noliter: { db: {} }
           });
 
-          // 👩‍💼 접대원 및 손님 마스터 목록은 가게별로 나누지 않고 통합 관리 (전역 공유)
           const masterGirls = ref([]);
           const masterCustomers = ref([]);
 
@@ -1087,10 +1102,16 @@
             return Array.from(map.values());
           });
 
-          const groupedPersonalFeeCount = computed(() => {
-            if (!invoiceModal.value.isOpen || !invoiceModal.value.room) return 0;
+          const invoiceModalStoreMotelItems = computed(() => {
+            if (!invoiceModal.value.isOpen || !invoiceModal.value.room) return [];
             const girls = invoiceModal.value.room._originalRef.girls || [];
-            return girls.filter(g => g.checked).length;
+            return girls.filter(g => g.motelState === 'store');
+          });
+
+          const invoiceModalStorePersonalItems = computed(() => {
+            if (!invoiceModal.value.isOpen || !invoiceModal.value.room) return [];
+            const girls = invoiceModal.value.room._originalRef.girls || [];
+            return girls.filter(g => g.personalState === 'store');
           });
 
           const girlModal = ref({
@@ -1280,13 +1301,11 @@
                   loaded = true;
                 }
 
-                // 통합 마스터 목록 불러오기
                 const masterRecord = data.find(item => item.key === 'bar_jangbu_integrated_masters_v1');
                 if (masterRecord && masterRecord.value) {
                   masterGirls.value = masterRecord.value.masterGirls || [];
                   masterCustomers.value = masterRecord.value.masterCustomers || [];
                 } else if (venueRecord && venueRecord.value) {
-                  // 구버전 데이터 호환: 기존 고구려에 있던 마스터 목록을 통합 마스터의 기본값으로 가져옴
                   if (venueRecord.value.gokugyeu && venueRecord.value.gokugyeu.masterGirls) {
                     masterGirls.value = venueRecord.value.gokugyeu.masterGirls;
                   }
@@ -1499,15 +1518,84 @@
             }
           };
 
-          const getCommonExtraFee = (r) => {
+          // M, P 독립 토글 버튼 관련 헬퍼 함수들
+          const cycleGirlMotel = (g) => {
+            if (!g.motelState) {
+              g.motelState = 'store'; // 미선택 -> M○(가게 계산)
+            } else if (g.motelState === 'store') {
+              g.motelState = 'customer'; // M○ -> M×(손님 직접)
+            } else {
+              g.motelState = ''; // M× -> 미선택
+            }
+            saveData();
+          };
+
+          const cycleGirlPersonal = (g) => {
+            if (!g.personalState) {
+              g.personalState = 'store'; // 미선택 -> P○(가게 계산)
+            } else if (g.personalState === 'store') {
+              g.personalState = 'customer'; // P○ -> P×(손님 직접)
+            } else {
+              g.personalState = ''; // P× -> 미선택
+            }
+            saveData();
+          };
+
+          const getMotelLabel = (state) => {
+            if (state === 'store') return 'M○';
+            if (state === 'customer') return 'M×';
+            return 'M';
+          };
+
+          const getMotelBtnClass = (state) => {
+            if (state === 'store') return 'bg-rose-500 text-white shadow-sm';
+            if (state === 'customer') return 'bg-zinc-700 text-zinc-300';
+            return 'bg-zinc-200 dark:bg-zinc-800 text-zinc-400 hover:text-zinc-200';
+          };
+
+          const getMotelTitle = (state) => {
+            if (state === 'store') return '모텔비: 가게 계산 (매출 포함)';
+            if (state === 'customer') return '모텔비: 손님 직접 계산';
+            return '모텔비 선택 안함 (클릭 시 가게 계산)';
+          };
+
+          const getPersonalLabel = (state) => {
+            if (state === 'store') return 'P○';
+            if (state === 'customer') return 'P×';
+            return 'P';
+          };
+
+          const getPersonalBtnClass = (state) => {
+            if (state === 'store') return 'bg-customOrange text-zinc-950 font-black shadow-sm';
+            if (state === 'customer') return 'bg-zinc-700 text-zinc-300';
+            return 'bg-zinc-200 dark:bg-zinc-800 text-zinc-400 hover:text-zinc-200';
+          };
+
+          const getPersonalTitle = (state) => {
+            if (state === 'store') return '개인비: 가게 계산 (매출 포함)';
+            if (state === 'customer') return '개인비: 손님 직접 계산';
+            return '개인비 선택 안함 (클릭 시 가게 계산)';
+          };
+
+          const getCommonExtraFee = (r, mode = 'cash') => {
             let extra = 0;
             if (r.rtChecked) extra += 20000;
+            
+            const motelUnit = mode === 'cash' ? 50000 : 100000;
+            const personalUnit = 200000;
+
             if (r.girls && Array.isArray(r.girls)) {
               r.girls.forEach(g => {
                 extra += calculateGirlFee(g);
-                if (g.checked) extra += 200000;
+                if (g.motelState === 'store') {
+                  extra += motelUnit;
+                }
+                if (g.personalState === 'store') {
+                  extra += personalUnit;
+                }
               });
             }
+
             if (r.extras && Array.isArray(r.extras)) {
               r.extras.forEach(ex => {
                 extra += Number(ex.amount) || 0;
@@ -1527,13 +1615,8 @@
             else if (r.drinkType === '17년') drinkPrice = 170000;
             else if (r.drinkType === '소맥') drinkPrice = 100000;
 
-            const motelUnit = 50000;
-            const motelQty = Number(r.motelQty) || 1;
-            const totalMotel = (r.motelFee > 0) ? (motelUnit * motelQty) : 0;
-
             const payableQty = Math.max(0, qty - serviceQty);
-
-            return (drinkPrice * payableQty) + getCommonExtraFee(r) + totalMotel;
+            return (drinkPrice * payableQty) + getCommonExtraFee(r, 'cash');
           };
 
           const calculateRoomTotalCard = (r) => {
@@ -1545,14 +1628,58 @@
             else if (r.drinkType === '17년') drinkPrice = 200000;
             else if (r.drinkType === '소맥') drinkPrice = 130000;
 
-            const motelUnit = 100000;
-            const motelQty = Number(r.motelQty) || 1;
-            const totalMotel = (r.motelFee > 0) ? (motelUnit * motelQty) : 0;
-
             const payableQty = Math.max(0, qty - serviceQty);
-
-            return (drinkPrice * payableQty) + getCommonExtraFee(r) + totalMotel;
+            return (drinkPrice * payableQty) + getCommonExtraFee(r, 'card');
           };
+
+          // 상단 일일 정산 모텔/개인비 통계 계산
+          const todayMotelStoreCount = computed(() => {
+            let count = 0;
+            currentDayData.value.rooms.forEach(r => {
+              if (r.girls && Array.isArray(r.girls)) {
+                r.girls.forEach(g => {
+                  if (g.motelState === 'store') count++;
+                });
+              }
+            });
+            return count;
+          });
+
+          const todayMotelCustomerCount = computed(() => {
+            let count = 0;
+            currentDayData.value.rooms.forEach(r => {
+              if (r.girls && Array.isArray(r.girls)) {
+                r.girls.forEach(g => {
+                  if (g.motelState === 'customer') count++;
+                });
+              }
+            });
+            return count;
+          });
+
+          const todayPersonalStoreCount = computed(() => {
+            let count = 0;
+            currentDayData.value.rooms.forEach(r => {
+              if (r.girls && Array.isArray(r.girls)) {
+                r.girls.forEach(g => {
+                  if (g.personalState === 'store') count++;
+                });
+              }
+            });
+            return count;
+          });
+
+          const todayPersonalCustomerCount = computed(() => {
+            let count = 0;
+            currentDayData.value.rooms.forEach(r => {
+              if (r.girls && Array.isArray(r.girls)) {
+                r.girls.forEach(g => {
+                  if (g.personalState === 'customer') count++;
+                });
+              }
+            });
+            return count;
+          });
 
           const formatKoreanFee = (amount) => {
             if (amount <= 0) return '0원';
@@ -1593,7 +1720,7 @@
           const addRoomCard = () => {
             currentDayData.value.rooms.push({
               _id: Date.now() + Math.random(),
-              no: "1T", customer: "", rtChecked: true, motelFee: 0, motelQty: 1, extras: [], drinkType: "12년", drinkQty: 1, serviceQty: 0, price: 0, payMethod: "현금", price2: 0, payMethod2: "카드", note: "", girls: []
+              no: "1T", customer: "", rtChecked: true, extras: [], drinkType: "12년", drinkQty: 1, serviceQty: 0, price: 0, payMethod: "현금", price2: 0, payMethod2: "카드", note: "", girls: []
             });
             saveData();
           };
@@ -1610,7 +1737,7 @@
 
           const addGirl = (roomObj) => {
             if (!roomObj.girls) roomObj.girls = [];
-            roomObj.girls.push({ name: "", office: "사무실", tc: "1H", tc2: "", checked: false });
+            roomObj.girls.push({ name: "", office: "사무실", tc: "1H", tc2: "", motelState: "", personalState: "" });
             saveData();
           };
 
@@ -1864,8 +1991,10 @@
             girlModal, openAddGirlModal, openEditGirlModal, closeGirlModal, saveGirlModal, removeStandaloneGirlOriginalIndex,
             customerModal, openAddCustomerModal, openEditCustomerModal, closeCustomerModal, saveCustomerModal, removeStandaloneCustomerOriginalIndex,
             invoiceModal, openInvoiceModal, closeInvoiceModal, getDrinkCashUnitPrice, getDrinkCardUnitPrice, getDrinkTotalPrice,
-            groupedServiceFees, groupedPersonalFeeCount,
-            currentVenue, switchVenue
+            groupedServiceFees, invoiceModalStoreMotelItems, invoiceModalStorePersonalItems,
+            currentVenue, switchVenue,
+            cycleGirlMotel, cycleGirlPersonal, getMotelLabel, getMotelBtnClass, getMotelTitle, getPersonalLabel, getPersonalBtnClass, getPersonalTitle,
+            todayMotelStoreCount, todayMotelCustomerCount, todayPersonalStoreCount, todayPersonalCustomerCount
           };
         }
       }).mount('#app');

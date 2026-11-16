@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-  <title>장부 시스템</title>
+  <title>장부</title>
 
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 120'%3E%3Cpath d='M48.8 4.2c-1.8 0-3.3 1.1-3.9 2.7L2 74.5c-.8 2 0 4.2 1.7 5.2 1.8 1 4 .5 5.1-1.1l25.8-37.5-12.7 52.4c-.6 2.3.8 4.7 3.1 5.3.4.1.9.2 1.3.2 1.9 0 3.7-1.2 4.3-3.1l26-80.8c.7-2.1-.4-4.4-2.5-5.2-.8-.3-1.6-.3-2.4-.3z' fill='%2300ff66' stroke='%2300cc52' stroke-width='3'/%3E%3C/svg%3E">
 
@@ -55,7 +55,7 @@
       <div class="bg-white dark:bg-darkCard border border-zinc-200 dark:border-darkBorder p-6 sm:p-8 rounded-2xl shadow-2xl w-full max-w-md space-y-5">
         <div class="text-center space-y-1">
           <h2 class="text-xl sm:text-2xl font-bold flex items-center justify-center gap-2">
-            <span>🍸 장부 시스템 통합 로그인</span>
+            <span>🍸 장부 통합 로그인</span>
           </h2>
           <p class="text-xs text-zinc-400 font-medium">관리자 전용 로그인 페이지입니다.</p>
         </div>
@@ -156,7 +156,7 @@
                 </div>
               </template>
 
-              <!-- 손님 계산서에서는 '가게 계산(M○)'인 항목들만 계산서 합계에 포함 -->
+              <!-- 손님 계산서: 가게 계산(M○) 모텔비만 합산 -->
               <template v-for="(mg, mgIdx) in invoiceModalStoreMotelItems" :key="'inv_mg_'+mgIdx">
                 <div class="grid grid-cols-12 gap-1 items-center pt-1">
                   <div class="col-span-5 text-left pl-1 font-semibold text-zinc-900 truncate">
@@ -172,7 +172,7 @@
                 </div>
               </template>
 
-              <!-- 손님 계산서에서는 '가게 계산(P○)'인 항목들만 계산서 합계에 포함 -->
+              <!-- 손님 계산서: 가게 계산(P○) 개인비만 합산 -->
               <template v-for="(pg, pgIdx) in invoiceModalStorePersonalItems" :key="'inv_pg_'+pgIdx">
                 <div class="grid grid-cols-12 gap-1 items-center pt-1">
                   <div class="col-span-5 text-left pl-1 font-semibold text-zinc-900 truncate">
@@ -203,6 +203,15 @@
                   </div>
                 </div>
               </template>
+            </div>
+
+            <!-- 별도 손님 직접 계산(M×, P×) 안내 표시 -->
+            <div v-if="invoiceModalDirectItems.length > 0" class="mt-2 pt-2 border-t border-dashed border-zinc-300 text-[11px] text-zinc-500 space-y-0.5">
+              <div class="font-bold text-zinc-700">※ 손님 직접 계산(별도 처리) 내역:</div>
+              <div v-for="(dItem, dIdx) in invoiceModalDirectItems" :key="'dir_'+dIdx" class="flex justify-between pl-1">
+                <span>• {{ dItem.label }} ({{ dItem.name }})</span>
+                <span class="font-mono text-zinc-600">별도 정산 완료</span>
+              </div>
             </div>
           </div>
 
@@ -415,8 +424,13 @@
         </div>
       </header>
 
-      <!-- 📱 모바일 & PC 겸용 방 번호 퀵 내비게이터 바 -->
-      <aside class="fixed left-1 sm:left-3 top-1/2 -translate-y-1/2 z-40 flex flex-col items-center gap-1 bg-white/85 dark:bg-darkCard/85 backdrop-blur-md border border-zinc-300 dark:border-darkBorder p-1 sm:p-1.5 rounded-xl shadow-xl max-h-[65vh] overflow-y-auto">
+      <!-- 📱 모바일 & PC 겸용 방 번호 퀵 내비게이터 바 (위/아래 스크롤 화살표 포함) -->
+      <aside class="fixed left-1 sm:left-3 top-1/2 -translate-y-1/2 z-40 flex flex-col items-center gap-1 bg-white/85 dark:bg-darkCard/85 backdrop-blur-md border border-zinc-300 dark:border-darkBorder p-1 sm:p-1.5 rounded-xl shadow-xl max-h-[75vh] overflow-y-auto">
+        <!-- 맨 위로 이동 화살표 버튼 -->
+        <button @click="scrollToTop" class="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-zinc-200 dark:bg-[#222] hover:bg-accent hover:text-zinc-950 text-zinc-600 dark:text-zinc-300 font-bold text-xs flex items-center justify-center transition shadow-sm shrink-0 border border-zinc-300 dark:border-darkBorder" title="화면 맨 위로 이동">
+          ▲
+        </button>
+
         <button @click="addRoomCard()" class="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-accent hover:bg-accentHover text-zinc-950 font-extrabold text-xs sm:text-sm flex items-center justify-center transition shadow-sm shrink-0" title="방 추가">
           +
         </button>
@@ -429,9 +443,14 @@
           {{ item.roomRef.no }}
         </button>
         <div v-if="roomQuickNavList.length === 0" class="text-[8px] sm:text-[9px] text-zinc-500 text-center py-1.5 px-0.5">없음</div>
+
+        <!-- 맨 마지막 방 테이블로 이동 화살표 버튼 -->
+        <button @click="scrollToLastRoom" class="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-zinc-200 dark:bg-[#222] hover:bg-customOrange hover:text-zinc-950 text-zinc-600 dark:text-zinc-300 font-bold text-xs flex items-center justify-center transition shadow-sm shrink-0 border border-zinc-300 dark:border-darkBorder mt-0.5" title="맨 마지막 방 테이블로 이동">
+          ▼
+        </button>
       </aside>
 
-      <!-- 상단 영역: 월별 캘린더 & 요약 카드 -->
+      <!-- 상단 영역: 월별 캘린더 & 술 총 수량 요약 카드 -->
       <section class="grid grid-cols-1 md:grid-cols-12 gap-4 items-stretch">
         
         <!-- 월별 캘린더 -->
@@ -473,76 +492,66 @@
           </div>
         </div>
 
-        <!-- 통계 카드 -->
-        <div class="md:col-span-5 flex flex-col justify-between gap-3">
-          <div class="bg-white dark:bg-darkCard border border-zinc-200 dark:border-darkBorder p-4 rounded-xl shadow-sm flex flex-col justify-center space-y-3 flex-1">
-            <div class="flex items-center justify-between border-b border-zinc-200 dark:border-darkBorder pb-2">
-              <span class="text-[11px] sm:text-xs text-zinc-500 dark:text-zinc-400 font-semibold">술 총 수량 (선택한 날짜)</span>
-              <span class="text-xl font-bold font-mono text-customOrange">{{ todayTotalDrinks }}병</span>
-            </div>
-            <div class="flex items-center justify-between">
-              <span class="text-[11px] sm:text-xs text-zinc-500 dark:text-zinc-400 font-semibold">술 총 수량 (이번 달 전체)</span>
-              <span class="text-xl font-bold font-mono text-accent">{{ monthTotalDrinks }}병</span>
-            </div>
+        <!-- 술 총 수량 통계 카드 -->
+        <div class="md:col-span-5 bg-white dark:bg-darkCard border border-zinc-200 dark:border-darkBorder p-5 rounded-xl shadow-sm flex flex-col justify-center space-y-5">
+          <div class="flex items-center justify-between border-b border-zinc-200 dark:border-darkBorder pb-4">
+            <span class="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 font-semibold">술 총 수량 (선택한 날짜)</span>
+            <span class="text-2xl font-bold font-mono text-customOrange">{{ todayTotalDrinks }}병</span>
           </div>
-
-          <!-- M / P 결제 주체별 정산 현황판 -->
-          <div class="bg-white dark:bg-darkCard border border-zinc-200 dark:border-darkBorder p-4 rounded-xl shadow-sm flex flex-col justify-between flex-1 space-y-2">
-            <div class="flex items-center justify-between border-b border-zinc-200 dark:border-darkBorder pb-1.5">
-              <span class="text-[11px] sm:text-xs text-customOrange font-bold tracking-wider">[ 모텔(M) · 개인비(P) 결제 주체별 정산 현황 ]</span>
-              <span class="text-[10px] text-zinc-400">당일 영업기준</span>
-            </div>
-            <div class="grid grid-cols-2 gap-2 text-xs pt-1">
-              <div class="bg-zinc-50 dark:bg-[#1a1a1a] p-2 rounded border border-zinc-200 dark:border-darkBorder space-y-1">
-                <div class="font-bold text-rose-400 text-[11px]">모텔비 (M) 현황</div>
-                <div class="flex justify-between text-zinc-400">
-                  <span>가게 계산 (M○):</span>
-                  <strong class="text-accent font-mono">{{ todayMotelStoreCount }}건</strong>
-                </div>
-                <div class="flex justify-between text-zinc-400">
-                  <span>손님 직접 (M×):</span>
-                  <strong class="text-customOrange font-mono">{{ todayMotelCustomerCount }}건</strong>
-                </div>
-              </div>
-
-              <div class="bg-zinc-50 dark:bg-[#1a1a1a] p-2 rounded border border-zinc-200 dark:border-darkBorder space-y-1">
-                <div class="font-bold text-customOrange text-[11px]">개인비 (P) 현황</div>
-                <div class="flex justify-between text-zinc-400">
-                  <span>가게 계산 (P○):</span>
-                  <strong class="text-accent font-mono">{{ todayPersonalStoreCount }}건</strong>
-                </div>
-                <div class="flex justify-between text-zinc-400">
-                  <span>손님 직접 (P×):</span>
-                  <strong class="text-customOrange font-mono">{{ todayPersonalCustomerCount }}건</strong>
-                </div>
-              </div>
-            </div>
+          <div class="flex items-center justify-between">
+            <span class="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 font-semibold">술 총 수량 (이번 달 전체)</span>
+            <span class="text-2xl font-bold font-mono text-accent">{{ monthTotalDrinks }}병</span>
           </div>
         </div>
 
       </section>
 
-      <!-- 전체 검색 바 -->
-      <section class="bg-white dark:bg-darkCard border border-zinc-200 dark:border-darkBorder p-3 rounded-xl flex items-center gap-2">
-        <span class="text-xs font-bold text-accent whitespace-nowrap">전체 검색:</span>
-        <input type="text" v-model="searchQuery" placeholder="테이블, 손님, 접대원, 메모 검색..." class="w-full p-2 text-xs rounded-lg bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-zinc-100 outline-none focus:border-accent">
+      <!-- 전체 검색 및 외상 전용 필터 바 -->
+      <section class="bg-white dark:bg-darkCard border border-zinc-200 dark:border-darkBorder p-3 rounded-xl flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+        <div class="flex items-center gap-2 flex-1">
+          <span class="text-xs font-bold text-accent whitespace-nowrap">전체 검색:</span>
+          <input type="text" v-model="searchQuery" placeholder="테이블, 손님, 접대원, 메모 검색..." class="w-full p-2 text-xs rounded-lg bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-zinc-100 outline-none focus:border-accent">
+        </div>
+
+        <!-- 홈 맨 위 외상만 따로 보기 필터 버튼 -->
+        <div class="flex items-center gap-1.5 shrink-0 justify-end">
+          <button type="button" @click="filterCreditOnly = !filterCreditOnly"
+                  :class="filterCreditOnly ? 'bg-rose-600 text-white font-extrabold ring-2 ring-rose-400 shadow-md' : 'bg-zinc-100 dark:bg-[#1a1a1a] text-rose-400 border border-rose-500/40 hover:bg-rose-500/10 font-bold'"
+                  class="px-3 py-2 rounded-lg text-xs transition flex items-center gap-1.5">
+            <span>🚨 외상만 따로 보기</span>
+            <span class="bg-black/25 px-1.5 py-0.2 rounded font-mono text-[11px]">{{ totalCreditRoomCount }}건</span>
+          </button>
+          <button v-if="filterCreditOnly || searchQuery.trim()" type="button" @click="resetRoomFilters" class="px-2.5 py-2 rounded-lg text-xs bg-zinc-200 dark:bg-zinc-800 text-zinc-300 hover:text-white font-semibold">
+            초기화
+          </button>
+        </div>
       </section>
 
       <!-- 방(T/R) 카드 리스트 -->
-      <section class="space-y-3" v-show="!searchQuery.trim() || filteredRooms.length > 0">
+      <section class="space-y-3" v-show="(!searchQuery.trim() && !filterCreditOnly) || filteredRooms.length > 0">
         <div class="flex justify-between items-center">
           <span class="text-xs font-bold text-zinc-400 tracking-wider">
-            {{ searchQuery.trim() ? `🔍 테이블 검색 결과 (${filteredRooms.length}건)` : `ROOMS / TABLES (${selectedDate} 영업 테이블)` }}
+            <template v-if="filterCreditOnly">
+              🚨 전체 외상 테이블 모아보기 ({{ filteredRooms.length }}건)
+            </template>
+            <template v-else-if="searchQuery.trim()">
+              🔍 테이블 검색 결과 ({{ filteredRooms.length }}건)
+            </template>
+            <template v-else>
+              ROOMS / TABLES ({{ selectedDate }} 영업 테이블)
+            </template>
           </span>
           <span class="text-xs text-zinc-500">* 항목을 수정하면 실시간 클라우드에 반영 및 저장됩니다.</span>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div v-for="(roomWrap, idx) in filteredRooms" :key="roomWrap._originalRef._id || idx" :id="'room-card-' + idx" class="bg-white dark:bg-darkCard border border-zinc-200 dark:border-darkBorder rounded-xl p-4 shadow-sm space-y-3 relative">
+          <div v-for="(roomWrap, idx) in filteredRooms" :key="roomWrap._originalRef._id || idx" :id="'room-card-' + idx"
+               :class="roomWrap._originalRef.isCredit ? 'border-rose-500/80 ring-1 ring-rose-500/40' : (roomWrap._originalRef.isPaid ? 'border-emerald-500/60' : 'border-zinc-200 dark:border-darkBorder')"
+               class="bg-white dark:bg-darkCard border rounded-xl p-4 shadow-sm space-y-3 relative transition">
             
-            <div class="flex justify-between items-center pb-2 border-b border-zinc-200 dark:border-darkBorder">
+            <div class="flex flex-wrap justify-between items-center gap-2 pb-2 border-b border-zinc-200 dark:border-darkBorder">
               <div class="flex items-center gap-2">
-                <span v-if="searchQuery.trim()" class="text-xs bg-accent/20 text-accent font-mono px-2 py-0.5 rounded font-bold">{{ roomWrap._date }}</span>
+                <span v-if="searchQuery.trim() || filterCreditOnly" class="text-xs bg-accent/20 text-accent font-mono px-2 py-0.5 rounded font-bold">{{ roomWrap._date }}</span>
                 <select v-model="roomWrap._originalRef.no" @change="saveData" class="bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-accent font-bold text-sm px-2 py-1 rounded outline-none">
                   <option value="1T">1T</option>
                   <option value="2T">2T</option>
@@ -552,7 +561,22 @@
                   <option value="7T">7T</option>
                 </select>
                 <span class="text-xs text-zinc-400">테이블</span>
+
+                <!-- 외상 / 결제완료 체크 버튼 -->
+                <div class="flex items-center gap-1 ml-1">
+                  <button type="button" @click="toggleRoomCredit(roomWrap._originalRef)"
+                          :class="roomWrap._originalRef.isCredit ? 'bg-rose-600 text-white font-extrabold shadow-sm' : 'bg-zinc-100 dark:bg-[#1a1a1a] text-zinc-400 border border-zinc-300 dark:border-darkBorder hover:text-rose-400'"
+                          class="px-2 py-0.5 rounded text-[11px] transition">
+                    {{ roomWrap._originalRef.isCredit ? '🚨 외상중' : '외상' }}
+                  </button>
+                  <button type="button" @click="toggleRoomPaid(roomWrap._originalRef)"
+                          :class="roomWrap._originalRef.isPaid ? 'bg-emerald-500 text-zinc-950 font-extrabold shadow-sm' : 'bg-zinc-100 dark:bg-[#1a1a1a] text-zinc-400 border border-zinc-300 dark:border-darkBorder hover:text-emerald-400'"
+                          class="px-2 py-0.5 rounded text-[11px] transition">
+                    {{ roomWrap._originalRef.isPaid ? '✅ 결제완료' : '결제완료' }}
+                  </button>
+                </div>
               </div>
+
               <div class="flex items-center gap-2">
                 <button @click="openInvoiceModal(roomWrap)" class="text-xs bg-customOrange hover:bg-orange-600 text-zinc-950 font-bold px-2.5 py-1 rounded transition shadow-sm">
                   🧾 계산서 보기
@@ -563,22 +587,49 @@
 
             <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 text-xs">
               
-              <!-- 왼쪽 컬럼 -->
+              <!-- 왼쪽 컬럼: 손님 -> RT -> 술/수량(위) -> 추가항목(아래) 배치 -->
               <div class="sm:col-span-5 space-y-2">
                 <div>
                   <label class="block text-[10px] text-zinc-400 mb-0.5">손님</label>
                   <input type="text" v-model="roomWrap._originalRef.customer" @input="saveData" placeholder="손님 이름 / 특징" class="w-full p-2 rounded bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-darkBorder text-zinc-100 outline-none focus:border-accent">
                 </div>
 
-                <div class="flex items-center justify-between bg-zinc-50 dark:bg-[#1a1a1a] p-2 rounded border border-zinc-200 dark:border-darkBorder">
-                  <label class="flex items-center gap-1 cursor-pointer select-none">
+                <!-- RT (+2만) 단독 배치 -->
+                <div class="flex items-center bg-zinc-50 dark:bg-[#1a1a1a] p-2 rounded border border-zinc-200 dark:border-darkBorder">
+                  <label class="flex items-center gap-1.5 cursor-pointer select-none">
                     <input type="checkbox" v-model="roomWrap._originalRef.rtChecked" @change="saveData" class="w-3.5 h-3.5 accent-accent cursor-pointer">
-                    <span class="text-[10px] font-bold text-accent">RT (+2만)</span>
+                    <span class="text-[11px] font-bold text-accent">RT (+2만)</span>
                   </label>
-                  <span class="text-[10px] text-zinc-400">※ 모텔비·개인비는 아래 접대원별 M/P 버튼으로 설정</span>
                 </div>
 
-                <!-- 동적 추가 항목 영역 -->
+                <!-- 술 / 수량 (위쪽 배치) -->
+                <div>
+                  <div class="flex justify-between items-center mb-0.5">
+                    <label class="block text-[10px] text-zinc-400">술 / 수량</label>
+                    <span v-if="roomWrap._originalRef.serviceQty > 0" class="text-[10px] text-rose-400 font-bold">
+                      🎁 서비스 {{ roomWrap._originalRef.serviceQty }}병 차감
+                    </span>
+                  </div>
+                  <div class="flex gap-1">
+                    <select v-model="roomWrap._originalRef.drinkType" @change="saveData" class="w-[45%] min-w-0 p-1.5 rounded bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-darkBorder text-zinc-100 outline-none text-xs">
+                      <option value="">술 선택</option>
+                      <option value="12년">12년</option>
+                      <option value="17년">17년</option>
+                      <option value="소맥">소맥</option>
+                    </select>
+                    <select v-model.number="roomWrap._originalRef.drinkQty" @change="saveData" class="w-[28%] min-w-0 p-1.5 rounded bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-darkBorder text-accent font-bold outline-none text-xs text-center">
+                      <option v-for="n in 12" :key="n" :value="n">{{ n }}병</option>
+                    </select>
+                    <select v-model.number="roomWrap._originalRef.serviceQty" @change="saveData" class="w-[27%] min-w-0 p-1.5 rounded bg-zinc-50 dark:bg-[#1a1a1a] border border-rose-500/50 text-rose-400 font-bold outline-none text-[11px] text-center" title="서비스 술 수량 (금액 차감)">
+                      <option :value="0">S: 0</option>
+                      <option :value="1">S: 1병</option>
+                      <option :value="2">S: 2병</option>
+                      <option :value="3">S: 3병</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- 동적 추가 항목 영역 (아래쪽 배치) -->
                 <div class="flex flex-col gap-1.5 bg-zinc-50 dark:bg-[#1a1a1a] p-2 rounded border border-zinc-200 dark:border-darkBorder">
                   <div class="flex justify-between items-center mb-1">
                     <span class="text-[10px] font-bold text-customOrange">추가 항목 (담배/음식/현금/팁)</span>
@@ -607,35 +658,9 @@
                     </div>
                   </div>
                 </div>
-
-                <div>
-                  <div class="flex justify-between items-center mb-0.5">
-                    <label class="block text-[10px] text-zinc-400">술 / 수량</label>
-                    <span v-if="roomWrap._originalRef.serviceQty > 0" class="text-[10px] text-rose-400 font-bold">
-                      🎁 서비스 {{ roomWrap._originalRef.serviceQty }}병 차감
-                    </span>
-                  </div>
-                  <div class="flex gap-1">
-                    <select v-model="roomWrap._originalRef.drinkType" @change="saveData" class="w-[45%] min-w-0 p-1.5 rounded bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-darkBorder text-zinc-100 outline-none text-xs">
-                      <option value="">술 선택</option>
-                      <option value="12년">12년</option>
-                      <option value="17년">17년</option>
-                      <option value="소맥">소맥</option>
-                    </select>
-                    <select v-model.number="roomWrap._originalRef.drinkQty" @change="saveData" class="w-[28%] min-w-0 p-1.5 rounded bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-darkBorder text-accent font-bold outline-none text-xs text-center">
-                      <option v-for="n in 12" :key="n" :value="n">{{ n }}병</option>
-                    </select>
-                    <select v-model.number="roomWrap._originalRef.serviceQty" @change="saveData" class="w-[27%] min-w-0 p-1.5 rounded bg-zinc-50 dark:bg-[#1a1a1a] border border-rose-500/50 text-rose-400 font-bold outline-none text-[11px] text-center" title="서비스 술 수량 (금액 차감)">
-                      <option :value="0">S: 0</option>
-                      <option :value="1">S: 1병</option>
-                      <option :value="2">S: 2병</option>
-                      <option :value="3">S: 3병</option>
-                    </select>
-                  </div>
-                </div>
               </div>
 
-              <!-- 오른쪽 컬럼: 방 내 접대원 관리 영역 (M, P 독립 토글 버튼 체계) -->
+              <!-- 오른쪽 컬럼: 방 내 접대원 관리 영역 (M, P 독립 토글 버튼 및 M×/P× 강조 표시) -->
               <div class="sm:col-span-7 space-y-1.5 bg-zinc-50/50 dark:bg-[#202020] p-2.5 rounded-lg border border-zinc-200 dark:border-darkBorder flex flex-col justify-between">
                 <div>
                   <div class="flex justify-between items-center mb-1.5">
@@ -644,66 +669,83 @@
                   </div>
 
                   <div class="space-y-1.5 pr-0">
-                    <div v-for="(g, gIdx) in roomWrap._originalRef.girls" :key="gIdx" class="flex gap-1 items-center min-w-0">
+                    <div v-for="(g, gIdx) in roomWrap._originalRef.girls" :key="gIdx"
+                         :class="(g.motelState === 'customer' || g.personalState === 'customer') ? 'bg-amber-500/10 border border-amber-500/40 rounded-md p-1' : 'p-0.5'"
+                         class="flex flex-col gap-1 transition">
                       
-                      <!-- M 버튼: 미선택(공백) ➔ M○(가게 계산) ➔ M×(손님 직접) 순환 -->
-                      <button type="button" @click="cycleGirlMotel(g)" :class="getMotelBtnClass(g.motelState)" class="px-1.5 py-1 text-[11px] font-extrabold rounded shrink-0 transition" :title="getMotelTitle(g.motelState)">
-                        {{ getMotelLabel(g.motelState) }}
-                      </button>
+                      <div class="flex gap-1 items-center min-w-0">
+                        <!-- M 버튼 -->
+                        <button type="button" @click="cycleGirlMotel(g)" :class="getMotelBtnClass(g.motelState)" class="px-1.5 py-1 text-[11px] font-extrabold rounded shrink-0 transition" :title="getMotelTitle(g.motelState)">
+                          {{ getMotelLabel(g.motelState) }}
+                        </button>
 
-                      <!-- P 버튼: 미선택(공백) ➔ P○(가게 계산) ➔ P×(손님 직접) 순환 -->
-                      <button type="button" @click="cycleGirlPersonal(g)" :class="getPersonalBtnClass(g.personalState)" class="px-1.5 py-1 text-[11px] font-extrabold rounded shrink-0 transition" :title="getPersonalTitle(g.personalState)">
-                        {{ getPersonalLabel(g.personalState) }}
-                      </button>
+                        <!-- P 버튼 (파란색 계열 테마) -->
+                        <button type="button" @click="cycleGirlPersonal(g)" :class="getPersonalBtnClass(g.personalState)" class="px-1.5 py-1 text-[11px] font-extrabold rounded shrink-0 transition" :title="getPersonalTitle(g.personalState)">
+                          {{ getPersonalLabel(g.personalState) }}
+                        </button>
 
-                      <input type="text" v-model="g.name" @input="saveData" placeholder="이름" class="w-[14%] min-w-0 px-1 py-1 text-xs rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-darkBorder text-zinc-100 outline-none">
-                      
-                      <select v-model="g.office" @change="saveData" class="w-[20%] min-w-0 px-0.5 py-1 text-[11px] rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-darkBorder text-customOrange font-semibold outline-none">
-                        <option value="사무실">사무실</option>
-                        <option value="거성">거성</option>
-                        <option value="대한">대한</option>
-                        <option value="비비">비비</option>
-                        <option value="여우">여우</option>
-                        <option value="타임">타임</option>
-                        <option value="패밀리">패밀리</option>
-                        <option value="하이디">하이디</option>
-                        <option value="현대">현대</option>
-                        <option value="퀸">퀸</option>
-                      </select>
+                        <input type="text" v-model="g.name" @input="saveData" placeholder="이름" class="w-[14%] min-w-0 px-1 py-1 text-xs rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-darkBorder text-zinc-100 outline-none">
+                        
+                        <select v-model="g.office" @change="saveData" class="w-[20%] min-w-0 px-0.5 py-1 text-[11px] rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-darkBorder text-customOrange font-semibold outline-none">
+                          <option value="사무실">사무실</option>
+                          <option value="거성">거성</option>
+                          <option value="대한">대한</option>
+                          <option value="비비">비비</option>
+                          <option value="여우">여우</option>
+                          <option value="타임">타임</option>
+                          <option value="패밀리">패밀리</option>
+                          <option value="하이디">하이디</option>
+                          <option value="현대">현대</option>
+                          <option value="퀸">퀸</option>
+                        </select>
 
-                      <select v-model="g.tc" @change="saveData" class="w-[15%] min-w-0 px-0.5 py-1 text-[11px] rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-darkBorder text-accent font-mono font-bold outline-none text-center">
-                        <option value="">시간1</option>
-                        <option value="+1">+1</option>
-                        <option value="+2">+2</option>
-                        <option value="+3">+3</option>
-                        <option value="+4">+4</option>
-                        <option value="1H">1H</option>
-                        <option value="2H">2H</option>
-                        <option value="3H">3H</option>
-                        <option value="4H">4H</option>
-                        <option value="5H">5H</option>
-                        <option value="6H">6H</option>
-                      </select>
+                        <select v-model="g.tc" @change="saveData" class="w-[15%] min-w-0 px-0.5 py-1 text-[11px] rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-darkBorder text-accent font-mono font-bold outline-none text-center">
+                          <option value="">시간1</option>
+                          <option value="+1">+1</option>
+                          <option value="+2">+2</option>
+                          <option value="+3">+3</option>
+                          <option value="+4">+4</option>
+                          <option value="+5">+5</option>
+                          <option value="1H">1H</option>
+                          <option value="2H">2H</option>
+                          <option value="3H">3H</option>
+                          <option value="4H">4H</option>
+                          <option value="5H">5H</option>
+                          <option value="6H">6H</option>
+                        </select>
 
-                      <select v-model="g.tc2" @change="saveData" class="w-[15%] min-w-0 px-0.5 py-1 text-[11px] rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-darkBorder text-accent font-mono font-bold outline-none text-center">
-                        <option value="">시간2</option>
-                        <option value="+1">+1</option>
-                        <option value="+2">+2</option>
-                        <option value="+3">+3</option>
-                        <option value="+4">+4</option>
-                        <option value="1H">1H</option>
-                        <option value="2H">2H</option>
-                        <option value="3H">3H</option>
-                        <option value="4H">4H</option>
-                        <option value="5H">5H</option>
-                        <option value="6H">6H</option>
-                      </select>
+                        <select v-model="g.tc2" @change="saveData" class="w-[15%] min-w-0 px-0.5 py-1 text-[11px] rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-darkBorder text-accent font-mono font-bold outline-none text-center">
+                          <option value="">시간2</option>
+                          <option value="+1">+1</option>
+                          <option value="+2">+2</option>
+                          <option value="+3">+3</option>
+                          <option value="+4">+4</option>
+                          <option value="+5">+5</option>
+                          <option value="1H">1H</option>
+                          <option value="2H">2H</option>
+                          <option value="3H">3H</option>
+                          <option value="4H">4H</option>
+                          <option value="5H">5H</option>
+                          <option value="6H">6H</option>
+                        </select>
 
-                      <span class="w-[15%] min-w-0 text-[11px] font-bold text-customOrange text-center truncate" :title="'시간비 합계: ' + formatKoreanFee(calculateGirlFee(g))">
-                        {{ formatKoreanFee(calculateGirlFee(g)) }}
-                      </span>
+                        <span class="w-[15%] min-w-0 text-[11px] font-bold text-customOrange text-center truncate" :title="'시간비 합계: ' + formatKoreanFee(calculateGirlFee(g))">
+                          {{ formatKoreanFee(calculateGirlFee(g)) }}
+                        </span>
 
-                      <button @click="removeGirl(roomWrap._originalRef, gIdx)" class="w-[6%] text-rose-500 font-bold py-1 text-xs shrink-0 text-center hover:bg-rose-500/10 rounded">×</button>
+                        <button @click="removeGirl(roomWrap._originalRef, gIdx)" class="w-[6%] text-rose-500 font-bold py-1 text-xs shrink-0 text-center hover:bg-rose-500/10 rounded">×</button>
+                      </div>
+
+                      <!-- 손님 직접 계산(M×, P×) 연결 강조 배지 줄 -->
+                      <div v-if="g.motelState === 'customer' || g.personalState === 'customer'" class="flex flex-wrap items-center gap-1.5 pl-1 pt-0.5 text-[10px]">
+                        <span v-if="g.motelState === 'customer'" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-rose-500/20 border border-rose-500/50 text-rose-300 font-bold">
+                          ⚡ M× 모텔 손님직접계산 ({{ g.name || '미입력' }} 동반)
+                        </span>
+                        <span v-if="g.personalState === 'customer'" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-500/20 border border-blue-500/50 text-blue-300 font-bold">
+                          ⚡ P× 개인비 손님직접계산 ({{ g.name || '미입력' }} 동반)
+                        </span>
+                      </div>
+
                     </div>
 
                     <div v-if="!roomWrap._originalRef.girls || roomWrap._originalRef.girls.length === 0" class="text-[10px] text-zinc-500 text-center py-4">
@@ -765,20 +807,117 @@
         </div>
       </section>
 
-      <!-- 접대원 & 손님 통합 목록 현황판 -->
+      <!-- 🏢 왼쪽: 당일 사무실별 TC·개인비 합산 현황 / 오른쪽: 모텔(M)·접대원 개인비(P) 결제 주체별 정산 현황 -->
+      <section class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
+        
+        <!-- 왼쪽 (6칸): 당일 사무실별 TC · 가게 계산 개인비(P○) 합산 정산 현황 -->
+        <div class="lg:col-span-6 bg-white dark:bg-darkCard border border-zinc-200 dark:border-darkBorder p-4 sm:p-5 rounded-xl shadow-sm space-y-3 flex flex-col justify-between">
+          <div class="space-y-3">
+            <div class="flex flex-wrap justify-between items-center gap-2 border-b border-zinc-200 dark:border-darkBorder pb-2">
+              <div class="flex items-center gap-2">
+                <h3 class="text-xs font-bold text-accent tracking-wider">🏢 당일 사무실별 TC · 개인비 합산 현황 ({{ selectedDate }})</h3>
+                <span class="text-[10px] bg-accent/10 text-accent px-2 py-0.5 rounded font-bold">총 {{ officeDailySummaryList.length }}곳</span>
+              </div>
+              <span class="text-[11px] font-mono font-bold text-customOrange">
+                합계: ₩{{ officeDailyGrandTotal.toLocaleString() }}
+              </span>
+            </div>
+
+            <div v-if="officeDailySummaryList.length > 0" class="space-y-2 text-xs">
+              <div v-for="officeItem in officeDailySummaryList" :key="officeItem.office"
+                   class="bg-zinc-50 dark:bg-[#202020] border border-zinc-200 dark:border-darkBorder px-3.5 py-2.5 rounded-lg flex items-baseline flex-wrap gap-1.5 leading-relaxed">
+                <span class="font-extrabold text-customOrange text-sm">{{ officeItem.office }}</span>
+                <span class="font-black font-mono text-accent text-sm">{{ formatKoreanWonFull(officeItem.totalAmount) }}</span>
+                <span class="text-zinc-300 text-xs">
+                  (
+                  <template v-for="(detail, dIdx) in officeItem.details" :key="dIdx">
+                    <span v-if="dIdx > 0" class="text-zinc-500 mx-1">/</span>
+                    <span class="font-semibold text-zinc-100">{{ detail.name }}</span>
+                    <template v-if="detail.tcFee > 0">
+                      <span class="text-zinc-400 ml-1">TC</span>
+                      <span class="text-accent font-bold ml-0.5">{{ formatKoreanFee(detail.tcFee) }}</span>
+                    </template>
+                    <template v-if="detail.personalFee > 0">
+                      <span v-if="detail.tcFee > 0" class="text-zinc-500 mx-0.5">·</span>
+                      <span class="text-blue-400 ml-0.5">개인비</span>
+                      <span class="text-blue-300 font-bold ml-0.5">{{ formatKoreanFee(detail.personalFee) }}</span>
+                    </template>
+                  </template>
+                  )
+                </span>
+              </div>
+            </div>
+
+            <div v-else class="py-6 text-center text-zinc-500 text-xs">
+              선택한 날짜에 집계된 사무실 TC 및 가게 계산 개인비 내역이 없습니다.
+            </div>
+          </div>
+        </div>
+
+        <!-- 오른쪽 (6칸): 모텔(M) · 접대원 개인비(P) 결제 주체별 정산 현황 (가게 계산 강조 표기) -->
+        <div class="lg:col-span-6 bg-white dark:bg-darkCard border border-zinc-200 dark:border-darkBorder p-4 sm:p-5 rounded-xl shadow-sm flex flex-col justify-between space-y-3">
+          <div class="flex items-center justify-between border-b border-zinc-200 dark:border-darkBorder pb-2">
+            <span class="text-xs text-zinc-200 font-bold tracking-wider">[ 모텔(M) · 접대원 개인비(P) 결제 주체별 정산 현황 ]</span>
+            <span class="text-[10px] text-zinc-400">당일 영업기준</span>
+          </div>
+          
+          <div class="grid grid-cols-2 gap-3 text-xs flex-1 items-stretch">
+            <!-- 모텔비 (M) 카드: 가게 계산 강조 -->
+            <div class="bg-zinc-50 dark:bg-[#1a1a1a] p-3 rounded-lg border border-zinc-200 dark:border-darkBorder flex flex-col justify-center space-y-2">
+              <div class="font-bold text-rose-400 text-xs flex items-center justify-between">
+                <span>🏨 모텔비 (M) 현황</span>
+              </div>
+              <div class="flex justify-between items-center text-zinc-200 bg-rose-500/15 border border-rose-500/40 px-2 py-1 rounded">
+                <span class="font-bold text-rose-300 text-xs">가게 계산 (M○):</span>
+                <strong class="text-rose-400 font-mono text-sm font-black">{{ todayMotelStoreCount }}건</strong>
+              </div>
+              <div class="flex justify-between items-center text-zinc-400 px-1">
+                <span>손님 직접 (M×):</span>
+                <strong class="text-zinc-300 font-mono text-sm">{{ todayMotelCustomerCount }}건</strong>
+              </div>
+            </div>
+
+            <!-- 개인비 (P) 카드: 가게 계산 강조 -->
+            <div class="bg-zinc-50 dark:bg-[#1a1a1a] p-3 rounded-lg border border-zinc-200 dark:border-darkBorder flex flex-col justify-center space-y-2">
+              <div class="font-bold text-blue-400 text-xs flex items-center justify-between">
+                <span>💎 개인비 (P) 현황</span>
+              </div>
+              <div class="flex justify-between items-center text-zinc-200 bg-blue-500/15 border border-blue-500/40 px-2 py-1 rounded">
+                <span class="font-bold text-blue-300 text-xs">가게 계산 (P○):</span>
+                <strong class="text-blue-400 font-mono text-sm font-black">{{ todayPersonalStoreCount }}건</strong>
+              </div>
+              <div class="flex justify-between items-center text-zinc-400 px-1">
+                <span>손님 직접 (P×):</span>
+                <strong class="text-zinc-300 font-mono text-sm">{{ todayPersonalCustomerCount }}건</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- 접대원 & 손님 통합 목록 현황판 (상단 헤더 + 하단 펼치기/접기 버튼 모두 지원) -->
       <section class="grid grid-cols-1 xl:grid-cols-2 gap-4">
         
         <!-- 왼쪽: 접대원 통합 현황판 -->
         <div class="bg-white dark:bg-darkCard border border-zinc-200 dark:border-darkBorder p-4 sm:p-5 rounded-xl shadow-sm space-y-3 flex flex-col justify-between" v-show="!searchQuery.trim() || filteredGirls.length > 0">
           <div>
-            <div class="flex justify-between items-center pb-2 border-b border-zinc-200 dark:border-darkBorder mb-2.5">
+            <div class="flex flex-wrap justify-between items-center gap-2 pb-2 border-b border-zinc-200 dark:border-darkBorder mb-2.5">
               <div class="flex items-center gap-2">
                 <h3 class="text-xs font-bold text-customOrange tracking-wider">👩‍💼 접대원 통합 개별 목록 현황판</h3>
                 <span class="text-[10px] bg-customOrange/10 text-customOrange px-2 py-0.5 rounded font-bold">총 {{ filteredGirls.length }}명</span>
               </div>
-              <button @click="openAddGirlModal" class="text-xs bg-customOrange hover:bg-orange-600 text-zinc-950 font-bold px-3 py-1 rounded transition shadow-sm">
-                + 접대원 추가
-              </button>
+              <div class="flex items-center gap-1.5">
+                <!-- 상단 접대원 추가 왼쪽 펼치기/접기 버튼 -->
+                <button v-if="filteredGirls.length > 5 && !searchQuery.trim() && girlFilterOffice === '전체' && girlFilterType === '전체' && girlFilterStyle === '전체'"
+                        type="button" @click="isGirlsExpanded = !isGirlsExpanded"
+                        class="text-xs bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-customOrange font-bold px-2.5 py-1 rounded transition">
+                  {{ isGirlsExpanded ? '▲ 접기' : '▼ 펼치기' }}
+                </button>
+                <button @click="openAddGirlModal" class="text-xs bg-customOrange hover:bg-orange-600 text-zinc-950 font-bold px-3 py-1 rounded transition shadow-sm">
+                  + 접대원 추가
+                </button>
+              </div>
             </div>
 
             <div class="flex flex-wrap items-center justify-between gap-2 pb-2.5 mb-2.5 border-b border-zinc-200/70 dark:border-darkBorder/70">
@@ -850,8 +989,9 @@
               </div>
             </div>
 
-            <div v-if="filteredGirls.length > 5 && !searchQuery.trim() && girlFilterOffice === '전체' && girlFilterType === '전체' && girlFilterStyle === '전체'" class="pt-2 text-center">
-              <button @click="isGirlsExpanded = !isGirlsExpanded" class="text-xs text-customOrange font-bold hover:underline py-1 px-3 bg-customOrange/10 rounded-lg transition">
+            <!-- 하단 접기/펼치기 토글 -->
+            <div v-if="filteredGirls.length > 5 && !searchQuery.trim() && girlFilterOffice === '전체' && girlFilterType === '전체' && girlFilterStyle === '전체'" class="pt-2.5 text-center">
+              <button @click="isGirlsExpanded = !isGirlsExpanded" class="text-xs text-customOrange font-bold hover:underline py-1.5 px-4 bg-customOrange/10 rounded-lg transition">
                 {{ isGirlsExpanded ? '▲ 접기 (5명만 보기)' : `▼ 펼치기 (전체 ${filteredGirls.length}명 보기)` }}
               </button>
             </div>
@@ -861,14 +1001,22 @@
         <!-- 오른쪽: 손님 통합 현황판 -->
         <div class="bg-white dark:bg-darkCard border border-zinc-200 dark:border-darkBorder p-4 sm:p-5 rounded-xl shadow-sm space-y-3 flex flex-col justify-between" v-show="!searchQuery.trim() || filteredCustomers.length > 0">
           <div>
-            <div class="flex justify-between items-center pb-2 border-b border-zinc-200 dark:border-darkBorder mb-3">
+            <div class="flex flex-wrap justify-between items-center gap-2 pb-2 border-b border-zinc-200 dark:border-darkBorder mb-3">
               <div class="flex items-center gap-2">
                 <h3 class="text-xs font-bold text-accent tracking-wider">🕺 손님 통합 개별 목록 현황판</h3>
                 <span class="text-[10px] bg-accent/10 text-accent px-2 py-0.5 rounded font-bold">총 {{ filteredCustomers.length }}명</span>
               </div>
-              <button @click="openAddCustomerModal" class="text-xs bg-accent hover:bg-accentHover text-zinc-950 font-bold px-3 py-1 rounded transition shadow-sm">
-                + 손님 추가
-              </button>
+              <div class="flex items-center gap-1.5">
+                <!-- 상단 손님 추가 왼쪽 펼치기/접기 버튼 -->
+                <button v-if="filteredCustomers.length > 5 && !searchQuery.trim()"
+                        type="button" @click="isCustomersExpanded = !isCustomersExpanded"
+                        class="text-xs bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-accent font-bold px-2.5 py-1 rounded transition">
+                  {{ isCustomersExpanded ? '▲ 접기' : '▼ 펼치기' }}
+                </button>
+                <button @click="openAddCustomerModal" class="text-xs bg-accent hover:bg-accentHover text-zinc-950 font-bold px-3 py-1 rounded transition shadow-sm">
+                  + 손님 추가
+                </button>
+              </div>
             </div>
 
             <div class="space-y-2">
@@ -891,8 +1039,9 @@
               </div>
             </div>
 
-            <div v-if="filteredCustomers.length > 5 && !searchQuery.trim()" class="pt-2 text-center">
-              <button @click="isCustomersExpanded = !isCustomersExpanded" class="text-xs text-accent font-bold hover:underline py-1 px-3 bg-accent/10 rounded-lg transition">
+            <!-- 하단 접기/펼치기 토글 -->
+            <div v-if="filteredCustomers.length > 5 && !searchQuery.trim()" class="pt-2.5 text-center">
+              <button @click="isCustomersExpanded = !isCustomersExpanded" class="text-xs text-accent font-bold hover:underline py-1.5 px-4 bg-accent/10 rounded-lg transition">
                 {{ isCustomersExpanded ? '▲ 접기 (5명만 보기)' : `▼ 펼치기 (전체 ${filteredCustomers.length}명 보기)` }}
               </button>
             </div>
@@ -1051,6 +1200,28 @@
             girlFilterStyle.value = '전체';
           };
 
+          const filterCreditOnly = ref(false);
+          const resetRoomFilters = () => {
+            filterCreditOnly.value = false;
+            searchQuery.value = '';
+          };
+
+          const toggleRoomCredit = (roomObj) => {
+            roomObj.isCredit = !roomObj.isCredit;
+            if (roomObj.isCredit) {
+              roomObj.isPaid = false;
+            }
+            saveData();
+          };
+
+          const toggleRoomPaid = (roomObj) => {
+            roomObj.isPaid = !roomObj.isPaid;
+            if (roomObj.isPaid) {
+              roomObj.isCredit = false;
+            }
+            saveData();
+          };
+
           const previewGirl = ref(null);
 
           const invoiceModal = ref({
@@ -1112,6 +1283,21 @@
             if (!invoiceModal.value.isOpen || !invoiceModal.value.room) return [];
             const girls = invoiceModal.value.room._originalRef.girls || [];
             return girls.filter(g => g.personalState === 'store');
+          });
+
+          const invoiceModalDirectItems = computed(() => {
+            if (!invoiceModal.value.isOpen || !invoiceModal.value.room) return [];
+            const girls = invoiceModal.value.room._originalRef.girls || [];
+            const list = [];
+            girls.forEach(g => {
+              if (g.motelState === 'customer') {
+                list.push({ label: '모텔비 (M×)', name: g.name || '미입력' });
+              }
+              if (g.personalState === 'customer') {
+                list.push({ label: '개인비 (P×)', name: g.name || '미입력' });
+              }
+            });
+            return list;
           });
 
           const girlModal = ref({
@@ -1392,6 +1578,7 @@
             currentVenue.value = vKey;
             initDateData(selectedDate.value);
             resetGirlFilters();
+            filterCreditOnly.value = false;
           };
 
           onMounted(() => {
@@ -1518,25 +1705,25 @@
             }
           };
 
-          // M, P 독립 토글 버튼 관련 헬퍼 함수들
+          // M, P 독립 토글 버튼 관련 함수
           const cycleGirlMotel = (g) => {
             if (!g.motelState) {
-              g.motelState = 'store'; // 미선택 -> M○(가게 계산)
+              g.motelState = 'store';
             } else if (g.motelState === 'store') {
-              g.motelState = 'customer'; // M○ -> M×(손님 직접)
+              g.motelState = 'customer';
             } else {
-              g.motelState = ''; // M× -> 미선택
+              g.motelState = '';
             }
             saveData();
           };
 
           const cycleGirlPersonal = (g) => {
             if (!g.personalState) {
-              g.personalState = 'store'; // 미선택 -> P○(가게 계산)
+              g.personalState = 'store';
             } else if (g.personalState === 'store') {
-              g.personalState = 'customer'; // P○ -> P×(손님 직접)
+              g.personalState = 'customer';
             } else {
-              g.personalState = ''; // P× -> 미선택
+              g.personalState = '';
             }
             saveData();
           };
@@ -1549,13 +1736,13 @@
 
           const getMotelBtnClass = (state) => {
             if (state === 'store') return 'bg-rose-500 text-white shadow-sm';
-            if (state === 'customer') return 'bg-zinc-700 text-zinc-300';
+            if (state === 'customer') return 'bg-rose-950 text-rose-300 border border-rose-500 ring-1 ring-rose-400/50';
             return 'bg-zinc-200 dark:bg-zinc-800 text-zinc-400 hover:text-zinc-200';
           };
 
           const getMotelTitle = (state) => {
             if (state === 'store') return '모텔비: 가게 계산 (매출 포함)';
-            if (state === 'customer') return '모텔비: 손님 직접 계산';
+            if (state === 'customer') return '모텔비: 손님 직접 계산 (강조 표시)';
             return '모텔비 선택 안함 (클릭 시 가게 계산)';
           };
 
@@ -1566,14 +1753,14 @@
           };
 
           const getPersonalBtnClass = (state) => {
-            if (state === 'store') return 'bg-customOrange text-zinc-950 font-black shadow-sm';
-            if (state === 'customer') return 'bg-zinc-700 text-zinc-300';
-            return 'bg-zinc-200 dark:bg-zinc-800 text-zinc-400 hover:text-zinc-200';
+            if (state === 'store') return 'bg-blue-600 text-white font-black shadow-sm';
+            if (state === 'customer') return 'bg-blue-950 text-blue-300 border border-blue-500 ring-1 ring-blue-400/50';
+            return 'bg-zinc-200 dark:bg-zinc-800 text-zinc-400 hover:text-blue-300';
           };
 
           const getPersonalTitle = (state) => {
             if (state === 'store') return '개인비: 가게 계산 (매출 포함)';
-            if (state === 'customer') return '개인비: 손님 직접 계산';
+            if (state === 'customer') return '개인비: 손님 직접 계산 (강조 표시)';
             return '개인비 선택 안함 (클릭 시 가게 계산)';
           };
 
@@ -1632,7 +1819,60 @@
             return (drinkPrice * payableQty) + getCommonExtraFee(r, 'card');
           };
 
-          // 상단 일일 정산 모텔/개인비 통계 계산
+          // 당일 사무실별 TC · 가게 계산 개인비(P○) 합산 집계
+          const officeDailySummaryList = computed(() => {
+            const rooms = currentDayData.value.rooms || [];
+            const officeMap = new Map();
+
+            rooms.forEach(r => {
+              if (!r.girls || !Array.isArray(r.girls)) return;
+              r.girls.forEach(g => {
+                const tcFee = calculateGirlFee(g);
+                const personalFee = g.personalState === 'store' ? 200000 : 0;
+                const itemSum = tcFee + personalFee;
+                if (itemSum <= 0) return;
+
+                const officeName = (g.office && g.office.trim()) ? g.office.trim() : '사무실';
+                const girlName = (g.name && g.name.trim()) ? g.name.trim() : '미입력';
+
+                if (!officeMap.has(officeName)) {
+                  officeMap.set(officeName, {
+                    office: officeName,
+                    totalAmount: 0,
+                    girlMap: new Map()
+                  });
+                }
+
+                const oEntry = officeMap.get(officeName);
+                oEntry.totalAmount += itemSum;
+
+                if (!oEntry.girlMap.has(girlName)) {
+                  oEntry.girlMap.set(girlName, {
+                    name: girlName,
+                    tcFee: 0,
+                    personalFee: 0
+                  });
+                }
+                const gEntry = oEntry.girlMap.get(girlName);
+                gEntry.tcFee += tcFee;
+                gEntry.personalFee += personalFee;
+              });
+            });
+
+            return Array.from(officeMap.values())
+              .map(item => ({
+                office: item.office,
+                totalAmount: item.totalAmount,
+                details: Array.from(item.girlMap.values())
+              }))
+              .sort((a, b) => a.office.localeCompare(b.office, 'ko'));
+          });
+
+          const officeDailyGrandTotal = computed(() => {
+            return officeDailySummaryList.value.reduce((acc, cur) => acc + cur.totalAmount, 0);
+          });
+
+          // 일일 정산 모텔/개인비 통계 계산
           const todayMotelStoreCount = computed(() => {
             let count = 0;
             currentDayData.value.rooms.forEach(r => {
@@ -1681,6 +1921,19 @@
             return count;
           });
 
+          const totalCreditRoomCount = computed(() => {
+            let count = 0;
+            Object.keys(db.value).forEach(dateKey => {
+              const dayObj = db.value[dateKey];
+              if (dayObj && dayObj.rooms) {
+                dayObj.rooms.forEach(r => {
+                  if (r.isCredit) count++;
+                });
+              }
+            });
+            return count;
+          });
+
           const formatKoreanFee = (amount) => {
             if (amount <= 0) return '0원';
             const man = Math.floor(amount / 10000);
@@ -1689,6 +1942,16 @@
               return `${man.toLocaleString()}만 ${(remainder / 1000).toFixed(0)}천`;
             }
             return `${man}만`;
+          };
+
+          const formatKoreanWonFull = (amount) => {
+            if (amount <= 0) return '0원';
+            const man = Math.floor(amount / 10000);
+            const remainder = amount % 10000;
+            if (remainder > 0) {
+              return `${man.toLocaleString()}만 ${remainder.toLocaleString()}원`;
+            }
+            return `${man.toLocaleString()}만원`;
           };
 
           const resizeTextarea = (event) => {
@@ -1720,7 +1983,7 @@
           const addRoomCard = () => {
             currentDayData.value.rooms.push({
               _id: Date.now() + Math.random(),
-              no: "1T", customer: "", rtChecked: true, extras: [], drinkType: "12년", drinkQty: 1, serviceQty: 0, price: 0, payMethod: "현금", price2: 0, payMethod2: "카드", note: "", girls: []
+              no: "1T", customer: "", rtChecked: true, isCredit: false, isPaid: false, extras: [], drinkType: "12년", drinkQty: 1, serviceQty: 0, price: 0, payMethod: "현금", price2: 0, payMethod2: "카드", note: "", girls: []
             });
             saveData();
           };
@@ -1748,7 +2011,9 @@
 
           const filteredRooms = computed(() => {
             const q = searchQuery.value.toLowerCase().trim();
-            if (!q) {
+            const onlyCredit = filterCreditOnly.value;
+
+            if (!q && !onlyCredit) {
               return currentDayData.value.rooms.map(r => {
                 if (r.rtChecked === undefined) r.rtChecked = true;
                 if (!r.payMethod2) r.payMethod2 = '카드';
@@ -1759,7 +2024,8 @@
             }
 
             let results = [];
-            Object.keys(db.value).forEach(dateKey => {
+            const sortedDates = Object.keys(db.value).sort((a, b) => b.localeCompare(a));
+            sortedDates.forEach(dateKey => {
               const dayObj = db.value[dateKey];
               if (dayObj && dayObj.rooms) {
                 dayObj.rooms.forEach(r => {
@@ -1768,12 +2034,15 @@
                   if (r.serviceQty === undefined) r.serviceQty = 0;
                   if (!r.extras) r.extras = [];
 
-                  const match = 
+                  if (onlyCredit && !r.isCredit) return;
+
+                  const match = !q || (
                     (r.customer && r.customer.toLowerCase().includes(q)) ||
                     (r.drinkType && r.drinkType.toLowerCase().includes(q)) ||
                     (r.no && r.no.toLowerCase().includes(q)) ||
                     (r.note && r.note.toLowerCase().includes(q)) ||
-                    (r.girls && r.girls.some(g => (g.name && g.name.toLowerCase().includes(q)) || (g.office && g.office.toLowerCase().includes(q))));
+                    (r.girls && r.girls.some(g => (g.name && g.name.toLowerCase().includes(q)) || (g.office && g.office.toLowerCase().includes(q))))
+                  );
                   
                   if (match) {
                     results.push({ _date: dateKey, _originalRef: r });
@@ -1819,6 +2088,24 @@
               el.classList.add('ring-2', 'ring-accent');
               setTimeout(() => {
                 el.classList.remove('ring-2', 'ring-accent');
+              }, 1200);
+            }
+          };
+
+          const scrollToTop = () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          };
+
+          const scrollToLastRoom = () => {
+            const len = filteredRooms.value.length;
+            if (len === 0) return;
+            const lastIdx = len - 1;
+            const el = document.getElementById('room-card-' + lastIdx);
+            if (el) {
+              el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              el.classList.add('ring-2', 'ring-customOrange');
+              setTimeout(() => {
+                el.classList.remove('ring-2', 'ring-customOrange');
               }, 1200);
             }
           };
@@ -1963,6 +2250,7 @@
             selectedDate.value = dateStr;
             initDateData(dateStr);
             searchQuery.value = '';
+            filterCreditOnly.value = false;
           };
 
           const exportJSON = () => {
@@ -1981,20 +2269,22 @@
 
           return {
             theme, setTheme, selectedDate, searchQuery, currentDayData, saveData, addRoomCard, deleteRoom, addGirl, removeGirl, filteredRooms, filteredGirls, filteredCustomers,
-            todayTotalDrinks, monthTotalDrinks, calendarYear, calendarMonth, calendarDays, dailyRoomCountMap, prevMonth, nextMonth, selectDateFromCalendar, exportJSON, resizeTextarea, calculateGirlFee, calculateRoomTotalCash, calculateRoomTotalCard, formatKoreanFee,
+            todayTotalDrinks, monthTotalDrinks, calendarYear, calendarMonth, calendarDays, dailyRoomCountMap, prevMonth, nextMonth, selectDateFromCalendar, exportJSON, resizeTextarea, calculateGirlFee, calculateRoomTotalCash, calculateRoomTotalCard, formatKoreanFee, formatKoreanWonFull,
             totalAutoCash, totalAutoCard,
             isLoggedIn, authError, authForm, handleLogin, handleLogout,
-            roomQuickNavList, jumpToRoom, syncStatus, addExtraItem, removeExtraItem,
+            roomQuickNavList, jumpToRoom, scrollToTop, scrollToLastRoom, syncStatus, addExtraItem, removeExtraItem,
             previewGirl, openPhotoModal, closePhotoModal, handlePhotoUpload, removeGirlPhoto,
             isGirlsExpanded, isCustomersExpanded, displayedGirls, displayedCustomers,
             girlFilterOffice, girlFilterType, girlFilterStyle, resetGirlFilters,
             girlModal, openAddGirlModal, openEditGirlModal, closeGirlModal, saveGirlModal, removeStandaloneGirlOriginalIndex,
             customerModal, openAddCustomerModal, openEditCustomerModal, closeCustomerModal, saveCustomerModal, removeStandaloneCustomerOriginalIndex,
             invoiceModal, openInvoiceModal, closeInvoiceModal, getDrinkCashUnitPrice, getDrinkCardUnitPrice, getDrinkTotalPrice,
-            groupedServiceFees, invoiceModalStoreMotelItems, invoiceModalStorePersonalItems,
+            groupedServiceFees, invoiceModalStoreMotelItems, invoiceModalStorePersonalItems, invoiceModalDirectItems,
             currentVenue, switchVenue,
             cycleGirlMotel, cycleGirlPersonal, getMotelLabel, getMotelBtnClass, getMotelTitle, getPersonalLabel, getPersonalBtnClass, getPersonalTitle,
-            todayMotelStoreCount, todayMotelCustomerCount, todayPersonalStoreCount, todayPersonalCustomerCount
+            todayMotelStoreCount, todayMotelCustomerCount, todayPersonalStoreCount, todayPersonalCustomerCount,
+            filterCreditOnly, resetRoomFilters, toggleRoomCredit, toggleRoomPaid, totalCreditRoomCount,
+            officeDailySummaryList, officeDailyGrandTotal
           };
         }
       }).mount('#app');

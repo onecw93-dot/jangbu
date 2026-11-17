@@ -1161,7 +1161,6 @@
     window.addEventListener('DOMContentLoaded', () => {
       const SUPABASE_URL = 'https://ickxgwkvkcgrehufmwut.supabase.co';
       const SUPABASE_KEY = 'sb_publishable_GLv8OIRpMqaI80yBdGng_w_Bh6Wxgqr';
-      // 버킷 이름을 공백 없는 표준 형식으로 변경
       const STORAGE_BUCKET = 'profile-images';
       const { createApp, ref, computed, onMounted } = Vue;
 
@@ -1294,7 +1293,6 @@
                   let width = img.width;
                   let height = img.height;
 
-                  // 고해상도 카메라 부하 방지를 위해 최대 긴 축 1600px로 조절
                   const MAX_SIZE = 1600;
                   if (width > height && width > MAX_SIZE) {
                     height = Math.round((height * MAX_SIZE) / width);
@@ -1309,7 +1307,6 @@
                   const ctx = canvas.getContext('2d');
                   ctx.drawImage(img, 0, 0, width, height);
 
-                  // sRGB 표준 JPEG로 강제 변환하여 브라우저 깨짐 및 업로드 멈춤 원인 차단
                   canvas.toBlob((blob) => {
                     const safeFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
                       type: 'image/jpeg',
@@ -1319,7 +1316,6 @@
                   }, 'image/jpeg', 0.82);
                 };
                 img.onerror = () => {
-                  // 디코딩 실패 시 원본 그대로 반환
                   resolve(file);
                 };
                 img.src = e.target.result;
@@ -1354,6 +1350,7 @@
             await uploadHandwrittenFile(file);
           };
 
+          // 수기장부 업로드 로직 (upsert: false 및 고유 파일명 적용)
           const uploadHandwrittenFile = async (rawFile) => {
             isHandwrittenUploading.value = true;
             syncStatus.value = '이미지 최적화 중...';
@@ -1366,13 +1363,14 @@
               syncStatus.value = '수기장부 사진 업로드 중...';
 
               const fileExt = 'jpg';
-              const safeFileName = `hw_${currentVenue.value}_${selectedDate.value.replace(/-/g, '')}_${Date.now()}.${fileExt}`;
+              // 고유 파일명 생성
+              const safeFileName = `img_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
 
               const { data, error } = await supabaseClient.storage
                 .from(STORAGE_BUCKET)
                 .upload(safeFileName, file, {
                   cacheControl: '3600',
-                  upsert: true
+                  upsert: false // 충돌 대기열 방지
                 });
 
               if (error) {
@@ -1382,6 +1380,7 @@
                 return;
               }
 
+              // 업로드 성공 후 즉시 getPublicUrl 호출
               const { data: urlData } = supabaseClient.storage
                 .from(STORAGE_BUCKET)
                 .getPublicUrl(safeFileName);
@@ -1604,6 +1603,7 @@
             previewGirl.value = null;
           };
 
+          // 접대원 프로필 사진 업로드 로직 (upsert: false 및 고유 파일명 적용)
           const handlePhotoUpload = async (event, girlObj) => {
             const rawFile = event.target.files[0];
             if (!rawFile) return;
@@ -1618,13 +1618,14 @@
               syncStatus.value = '사진 업로드 중...';
 
               const fileExt = 'jpg';
-              const safeFileName = `girl_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
+              // 고유 파일명 생성
+              const safeFileName = `img_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
 
               const { data, error } = await supabaseClient.storage
                 .from(STORAGE_BUCKET)
                 .upload(safeFileName, file, {
                   cacheControl: '3600',
-                  upsert: false
+                  upsert: false // 충돌 대기열 방지
                 });
 
               if (error) {
@@ -1634,6 +1635,7 @@
                 return;
               }
 
+              // 업로드 성공 후 즉시 getPublicUrl 호출
               const { data: urlData } = supabaseClient.storage
                 .from(STORAGE_BUCKET)
                 .getPublicUrl(safeFileName);

@@ -1310,6 +1310,10 @@
           };
 
           const uploadHandwrittenFile = async (file) => {
+            // 1. 서버 응답 전 URL.createObjectURL을 이용해 브라우저 임시 URL로 화면에 즉시 선명하게 표시
+            const localPreviewUrl = URL.createObjectURL(file);
+            currentDayData.value.handwrittenPhotoUrl = localPreviewUrl;
+
             isHandwrittenUploading.value = true;
             syncStatus.value = '수기장부 사진 업로드 중...';
 
@@ -1337,7 +1341,8 @@
                 .getPublicUrl(safeFileName);
 
               if (urlData && urlData.publicUrl) {
-                currentDayData.value.handwrittenPhotoUrl = urlData.publicUrl;
+                // 2. Supabase Storage 퍼블릭 URL 뒤에 캐시 무력화 파라미터(?t=현재시간) 부여
+                currentDayData.value.handwrittenPhotoUrl = urlData.publicUrl + '?t=' + Date.now();
                 saveData();
                 syncStatus.value = '업로드 완료 ✅';
               }
@@ -1558,6 +1563,10 @@
             const file = event.target.files[0];
             if (!file) return;
 
+            // 1. 서버 응답 전 URL.createObjectURL을 이용해 브라우저 임시 URL로 화면에 즉시 선명하게 표시
+            const localPreviewUrl = URL.createObjectURL(file);
+            girlObj.photoUrl = localPreviewUrl;
+
             girlObj.isUploading = true;
             syncStatus.value = '사진 업로드 중...';
 
@@ -1585,8 +1594,10 @@
                 .getPublicUrl(safeFileName);
 
               if (urlData && urlData.publicUrl) {
-                girlObj.photoUrl = urlData.publicUrl;
+                // 2. Supabase Storage 퍼블릭 URL 뒤에 캐시 무력화 파라미터(?t=현재시간) 부여
+                girlObj.photoUrl = urlData.publicUrl + '?t=' + Date.now();
                 saveData();
+                syncStatus.value = '업로드 완료 ✅';
               }
             } catch (err) {
               alert('사진 업로드 중 오류가 발생했습니다.');

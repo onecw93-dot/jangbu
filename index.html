@@ -535,7 +535,7 @@
           </div>
         </div>
 
-        <!-- 수기장부 이미지 업로드 카드 (날짜당 1장: 3칸) -->
+        <!-- 수기장부 이미지 업로드 카드 (카드 전체 클릭 및 드래그 앤 드롭 업로드 지원: 3칸) -->
         <div class="md:col-span-3 bg-white dark:bg-darkCard border border-zinc-200 dark:border-darkBorder p-3.5 sm:p-4 rounded-xl shadow-sm flex flex-col justify-between space-y-2.5">
           <div class="flex justify-between items-center border-b border-zinc-200 dark:border-darkBorder pb-2">
             <span class="text-xs font-bold text-zinc-200 tracking-wider">📒 수기장부 이미지</span>
@@ -561,13 +561,16 @@
             </div>
           </div>
 
-          <!-- 업로드된 수기장부 사진이 없을 때 -->
-          <label v-else class="flex-1 flex flex-col items-center justify-center min-h-[140px] border-2 border-dashed border-zinc-300 dark:border-zinc-700 hover:border-accent rounded-xl bg-zinc-50/50 dark:bg-[#1c1c1c] cursor-pointer transition p-3 text-center group">
+          <!-- 업로드된 수기장부 사진이 없을 때 (카드 전체 클릭 및 드래그 앤 드롭 업로드 영역) -->
+          <label v-else 
+                 @dragover.prevent @dragleave.prevent 
+                 @drop.prevent="handleHandwrittenDrop($event)"
+                 class="flex-1 flex flex-col items-center justify-center min-h-[140px] border-2 border-dashed border-zinc-300 dark:border-zinc-700 hover:border-accent rounded-xl bg-zinc-50/50 dark:bg-[#1c1c1c] cursor-pointer transition p-3 text-center group relative">
             <span v-if="isHandwrittenUploading" class="text-xs font-bold text-accent animate-pulse">업로드 중...</span>
             <template v-else>
-              <span class="text-2xl mb-1.5 group-hover:scale-110 transition">📷</span>
+              <div class="w-10 h-10 rounded-full bg-accent/10 border border-accent/30 text-accent flex items-center justify-center text-xl font-bold mb-1.5 group-hover:scale-110 transition">+</div>
               <span class="text-xs font-bold text-zinc-300 group-hover:text-accent transition">수기장부 사진 업로드</span>
-              <span class="text-[10px] text-zinc-500 mt-0.5">(날짜당 1장 저장)</span>
+              <span class="text-[10px] text-zinc-500 mt-0.5">(클릭 또는 파일을 여기에 드래그)</span>
             </template>
             <input type="file" accept="image/*" class="hidden" @change="handleHandwrittenPhotoUpload($event)">
           </label>
@@ -1296,19 +1299,30 @@
           const handleHandwrittenPhotoUpload = async (event) => {
             const file = event.target.files[0];
             if (!file) return;
+            await uploadHandwrittenFile(file);
+            event.target.value = '';
+          };
 
+          const handleHandwrittenDrop = async (event) => {
+            const file = event.dataTransfer.files[0];
+            if (!file) return;
+            await uploadHandwrittenFile(file);
+          };
+
+          const uploadHandwrittenFile = async (file) => {
             isHandwrittenUploading.value = true;
             syncStatus.value = '수기장부 사진 업로드 중...';
 
             try {
-              const fileExt = file.name.split('.').pop();
-              const fileName = `handwritten_${currentVenue.value}_${selectedDate.value}_${Date.now()}.${fileExt}`;
+              const fileExt = file.name.split('.').pop() || 'jpg';
+              // 모바일 크롬 한글 파일명 깨짐 방지를 위해 영문/숫자 타임스탬프 파일명 생성
+              const safeFileName = `hw_${currentVenue.value}_${selectedDate.value.replace(/-/g, '')}_${Date.now()}.${fileExt}`;
 
               const { data, error } = await supabaseClient.storage
                 .from(STORAGE_BUCKET)
-                .upload(fileName, file, {
+                .upload(safeFileName, file, {
                   cacheControl: '3600',
-                  upsert: false
+                  upsert: true
                 });
 
               if (error) {
@@ -1320,18 +1334,18 @@
 
               const { data: urlData } = supabaseClient.storage
                 .from(STORAGE_BUCKET)
-                .getPublicUrl(fileName);
+                .getPublicUrl(safeFileName);
 
               if (urlData && urlData.publicUrl) {
                 currentDayData.value.handwrittenPhotoUrl = urlData.publicUrl;
                 saveData();
+                syncStatus.value = '업로드 완료 ✅';
               }
             } catch (err) {
               alert('수기장부 사진 업로드 중 오류가 발생했습니다.');
               syncStatus.value = '업로드 오류 ❌';
             } finally {
               isHandwrittenUploading.value = false;
-              event.target.value = '';
             }
           };
 
@@ -1548,12 +1562,13 @@
             syncStatus.value = '사진 업로드 중...';
 
             try {
-              const fileExt = file.name.split('.').pop();
-              const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
+              const fileExt = file.name.split('.').pop() || 'jpg';
+              // 파일명 영문/숫자 타임스탬프 변환으로 모바일 크롬 깨짐 방지
+              const safeFileName = `girl_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
 
               const { data, error } = await supabaseClient.storage
                 .from(STORAGE_BUCKET)
-                .upload(fileName, file, {
+                .upload(safeFileName, file, {
                   cacheControl: '3600',
                   upsert: false
                 });
@@ -1567,7 +1582,7 @@
 
               const { data: urlData } = supabaseClient.storage
                 .from(STORAGE_BUCKET)
-                .getPublicUrl(fileName);
+                .getPublicUrl(safeFileName);
 
               if (urlData && urlData.publicUrl) {
                 girlObj.photoUrl = urlData.publicUrl;
@@ -2396,7 +2411,7 @@
             isLoggedIn, authError, authForm, handleLogin, handleLogout,
             roomQuickNavList, jumpToRoom, scrollToTop, scrollToLastRoom, syncStatus, addExtraItem, removeExtraItem,
             previewGirl, openPhotoModal, closePhotoModal, handlePhotoUpload, removeGirlPhoto,
-            isHandwrittenModalOpen, isHandwrittenUploading, openHandwrittenModal, closeHandwrittenModal, handleHandwrittenPhotoUpload, removeHandwrittenPhoto,
+            isHandwrittenModalOpen, isHandwrittenUploading, openHandwrittenModal, closeHandwrittenModal, handleHandwrittenPhotoUpload, handleHandwrittenDrop, removeHandwrittenPhoto,
             isGirlsExpanded, isCustomersExpanded, displayedGirls, displayedCustomers,
             girlFilterOffice, girlFilterType, girlFilterStyle, resetGirlFilters,
             girlModal, openAddGirlModal, openEditGirlModal, closeGirlModal, saveGirlModal, removeStandaloneGirlOriginalIndex,

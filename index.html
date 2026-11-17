@@ -1230,7 +1230,7 @@
             };
           };
 
-          const venuesData = ref({
+          venuesData = ref({
             gokugyeu: { db: {} },
             noliter: { db: {} }
           });
@@ -1284,6 +1284,45 @@
 
           const previewGirl = ref(null);
 
+          // 모바일 고용량/HEIC 카메라 사진 자동 표준 JPG 변환 헬퍼 함수
+          const convertImageToJpeg = (file) => {
+            return new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                  const canvas = document.createElement('canvas');
+                  let width = img.width;
+                  let height = img.height;
+
+                  const MAX_SIZE = 1600;
+                  if (width > height && width > MAX_SIZE) {
+                    height = Math.round((height * MAX_SIZE) / width);
+                    width = MAX_SIZE;
+                  } else if (height > width && height > MAX_SIZE) {
+                    width = Math.round((width * MAX_SIZE) / height);
+                    height = MAX_SIZE;
+                  }
+
+                  canvas.width = width;
+                  canvas.height = height;
+                  const ctx = canvas.getContext('2d');
+                  ctx.drawImage(img, 0, 0, width, height);
+
+                  canvas.toBlob((blob) => {
+                    const newFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+                      type: 'image/jpeg',
+                      lastModified: Date.now()
+                    });
+                    resolve(newFile);
+                  }, 'image/jpeg', 0.85);
+                };
+                img.src = e.target.result;
+              };
+              reader.readAsDataURL(file);
+            });
+          };
+
           // 수기장부 이미지 업로드 및 모달 상태
           const isHandwrittenModalOpen = ref(false);
           const isHandwrittenUploading = ref(false);
@@ -1309,17 +1348,18 @@
             await uploadHandwrittenFile(file);
           };
 
-          const uploadHandwrittenFile = async (file) => {
-            // 1. 서버 응답 전 URL.createObjectURL을 이용해 브라우저 임시 URL로 화면에 즉시 선명하게 표시
-            const localPreviewUrl = URL.createObjectURL(file);
-            currentDayData.value.handwrittenPhotoUrl = localPreviewUrl;
-
+          const uploadHandwrittenFile = async (rawFile) => {
             isHandwrittenUploading.value = true;
-            syncStatus.value = '수기장부 사진 업로드 중...';
+            syncStatus.value = '사진 최적화 중...';
 
             try {
-              const fileExt = file.name.split('.').pop() || 'jpg';
-              // 모바일 크롬 한글 파일명 깨짐 방지를 위해 영문/숫자 타임스탬프 파일명 생성
+              const file = await convertImageToJpeg(rawFile);
+              const localPreviewUrl = URL.createObjectURL(file);
+              currentDayData.value.handwrittenPhotoUrl = localPreviewUrl;
+
+              syncStatus.value = '수기장부 사진 업로드 중...';
+
+              const fileExt = 'jpg';
               const safeFileName = `hw_${currentVenue.value}_${selectedDate.value.replace(/-/g, '')}_${Date.now()}.${fileExt}`;
 
               const { data, error } = await supabaseClient.storage
@@ -1341,13 +1381,12 @@
                 .getPublicUrl(safeFileName);
 
               if (urlData && urlData.publicUrl) {
-                // 2. Supabase Storage 퍼블릭 URL 뒤에 캐시 무력화 파라미터(?t=현재시간) 부여
                 currentDayData.value.handwrittenPhotoUrl = urlData.publicUrl + '?t=' + Date.now();
                 saveData();
                 syncStatus.value = '업로드 완료 ✅';
               }
             } catch (err) {
-              alert('수기장부 사진 업로드 중 오류가 발생했습니다.');
+              alert('수기장부 사진 처리 중 오류가 발생했습니다.');
               syncStatus.value = '업로드 오류 ❌';
             } finally {
               isHandwrittenUploading.value = false;
@@ -1560,19 +1599,19 @@
           };
 
           const handlePhotoUpload = async (event, girlObj) => {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            // 1. 서버 응답 전 URL.createObjectURL을 이용해 브라우저 임시 URL로 화면에 즉시 선명하게 표시
-            const localPreviewUrl = URL.createObjectURL(file);
-            girlObj.photoUrl = localPreviewUrl;
+            const rawFile = event.target.files[0];
+            if (!rawFile) return;
 
             girlObj.isUploading = true;
-            syncStatus.value = '사진 업로드 중...';
+            syncStatus.value = '사진 최적화 중...';
 
             try {
-              const fileExt = file.name.split('.').pop() || 'jpg';
-              // 파일명 영문/숫자 타임스탬프 변환으로 모바일 크롬 깨짐 방지
+              const file = await convertImageToJpeg(rawFile);
+              girlObj.photoUrl = URL.createObjectURL(file);
+
+              syncStatus.value = '사진 업로드 중...';
+
+              const fileExt = 'jpg';
               const safeFileName = `girl_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
 
               const { data, error } = await supabaseClient.storage
@@ -1594,7 +1633,6 @@
                 .getPublicUrl(safeFileName);
 
               if (urlData && urlData.publicUrl) {
-                // 2. Supabase Storage 퍼블릭 URL 뒤에 캐시 무력화 파라미터(?t=현재시간) 부여
                 girlObj.photoUrl = urlData.publicUrl + '?t=' + Date.now();
                 saveData();
                 syncStatus.value = '업로드 완료 ✅';

@@ -273,6 +273,37 @@
       </div>
     </div>
 
+    <!-- 📒 수기장부 이미지 크게 보기 모달 -->
+    <div v-if="isHandwrittenModalOpen" @click.self="closeHandwrittenModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="bg-white dark:bg-darkCard border border-zinc-200 dark:border-darkBorder p-4 sm:p-5 rounded-2xl shadow-2xl max-w-2xl w-full space-y-4">
+        <div class="flex justify-between items-center border-b border-zinc-200 dark:border-darkBorder pb-2.5">
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-sm sm:text-base text-accent">📒 수기장부 이미지</span>
+            <span class="text-xs bg-zinc-200 dark:bg-zinc-800 px-2 py-0.5 rounded font-mono text-zinc-500 dark:text-zinc-300">{{ selectedDate }}</span>
+          </div>
+          <button @click="closeHandwrittenModal" class="text-zinc-400 hover:text-zinc-100 text-lg font-bold px-2">✕</button>
+        </div>
+
+        <div class="flex justify-center items-center bg-zinc-100 dark:bg-[#161616] rounded-xl overflow-hidden min-h-[280px] max-h-[70vh]">
+          <img v-if="currentDayData.handwrittenPhotoUrl" :src="currentDayData.handwrittenPhotoUrl" alt="수기장부 확대 이미지" class="max-w-full max-h-[70vh] object-contain">
+          <div v-else class="text-xs text-zinc-500 py-16">등록된 수기장부 이미지가 없습니다.</div>
+        </div>
+
+        <div class="flex justify-between items-center gap-2 pt-1">
+          <label class="flex-1 text-center py-2.5 px-3 bg-accent hover:bg-accentHover text-zinc-950 font-bold rounded-lg text-xs cursor-pointer transition">
+            📷 사진 변경 / 업로드
+            <input type="file" accept="image/*" class="hidden" @change="handleHandwrittenPhotoUpload($event)">
+          </label>
+          <button v-if="currentDayData.handwrittenPhotoUrl" @click="removeHandwrittenPhoto" class="py-2.5 px-3 bg-rose-500/15 hover:bg-rose-500/25 text-rose-500 font-bold rounded-lg text-xs transition">
+            사진 삭제
+          </button>
+          <button @click="closeHandwrittenModal" class="py-2.5 px-4 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 font-bold rounded-lg text-xs transition">
+            닫기
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- 👩‍💼 접대원 추가/수정 팝업 모달 -->
     <div v-if="girlModal.isOpen" @click.self="closeGirlModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div class="bg-white dark:bg-darkCard border border-zinc-200 dark:border-darkBorder p-5 sm:p-6 rounded-2xl shadow-2xl max-w-sm w-full space-y-4">
@@ -450,28 +481,28 @@
         </button>
       </aside>
 
-      <!-- 상단 영역: 월별 캘린더 & 술 총 수량 요약 카드 -->
+      <!-- 상단 영역 3단 구성: 월별 캘린더(5칸) & 술 총 수량 요약 카드(4칸) & 수기장부 이미지 업로드(3칸) -->
       <section class="grid grid-cols-1 md:grid-cols-12 gap-4 items-stretch">
         
-        <!-- 월별 캘린더 -->
-        <div class="md:col-span-7 bg-white dark:bg-darkCard border border-zinc-200 dark:border-darkBorder p-3 sm:p-4 rounded-xl shadow-sm space-y-2.5 flex flex-col justify-between">
+        <!-- 월별 캘린더 (가로 폭 적당히 축소: 5칸) -->
+        <div class="md:col-span-5 bg-white dark:bg-darkCard border border-zinc-200 dark:border-darkBorder p-3 sm:p-4 rounded-xl shadow-sm space-y-2 flex flex-col justify-between">
           <div class="flex justify-between items-center pb-2 border-b border-zinc-200 dark:border-darkBorder">
-            <div class="flex items-center gap-2">
-              <h2 class="text-xs font-bold text-zinc-600 dark:text-zinc-300 tracking-wider">MONTHLY CALENDAR</h2>
+            <div class="flex items-center gap-1.5">
+              <h2 class="text-xs font-bold text-zinc-600 dark:text-zinc-300 tracking-wider">CALENDAR</h2>
               <span class="text-xs font-bold font-mono text-accent px-1.5 py-0.5 bg-accent/10 rounded">{{ calendarYear }}.{{ String(calendarMonth + 1).padStart(2, '0') }}</span>
             </div>
-            <div class="flex items-center gap-1.5">
-              <button @click="addRoomCard()" class="text-xs bg-accent hover:bg-accentHover text-zinc-950 font-bold px-2.5 py-1 rounded transition shadow-sm">
+            <div class="flex items-center gap-1">
+              <button @click="addRoomCard()" class="text-xs bg-accent hover:bg-accentHover text-zinc-950 font-bold px-2 py-1 rounded transition shadow-sm">
                 + 방 추가
               </button>
-              <div class="flex items-center gap-1 ml-1">
-                <button @click="prevMonth" class="text-xs text-zinc-400 hover:text-zinc-900 dark:hover:text-white px-2 py-1">‹</button>
-                <button @click="nextMonth" class="text-xs text-zinc-400 hover:text-zinc-900 dark:hover:text-white px-2 py-1">›</button>
+              <div class="flex items-center gap-0.5 ml-0.5">
+                <button @click="prevMonth" class="text-xs text-zinc-400 hover:text-zinc-900 dark:hover:text-white px-1.5 py-1">‹</button>
+                <button @click="nextMonth" class="text-xs text-zinc-400 hover:text-zinc-900 dark:hover:text-white px-1.5 py-1">›</button>
               </div>
             </div>
           </div>
 
-          <div class="grid grid-cols-7 gap-1 text-center text-[10px] sm:text-[11px] text-zinc-400 font-medium">
+          <div class="grid grid-cols-7 gap-1 text-center text-[10px] text-zinc-400 font-medium">
             <div class="text-rose-500">일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div class="text-accent">토</div>
           </div>
 
@@ -479,29 +510,67 @@
             <div v-for="(day, idx) in calendarDays" :key="idx" 
                  @click="day.isCurrentMonth && selectDateFromCalendar(day.dateStr)"
                  :class="[
-                   'h-10 sm:h-12 p-0.5 sm:p-1 rounded transition flex flex-col justify-between text-xs border',
+                   'h-9 sm:h-10 p-0.5 sm:p-1 rounded transition flex flex-col justify-between text-xs border',
                    day.isCurrentMonth ? 'cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800/80' : 'opacity-25 pointer-events-none',
                    selectedDate === day.dateStr ? 'bg-accent/10 border-accent shadow-sm' : 'border-transparent bg-zinc-50/50 dark:bg-[#202020]'
                  ]">
-              <span class="text-[9px] sm:text-[10px] font-mono text-zinc-400">{{ day.dayNum }}</span>
+              <span class="text-[9px] font-mono text-zinc-400">{{ day.dayNum }}</span>
               <span v-if="day.isCurrentMonth && dailyRoomCountMap[day.dateStr]" 
-                    class="text-right font-mono font-bold text-[11px] sm:text-xs text-accent pr-0.5">
+                    class="text-right font-mono font-bold text-[10px] sm:text-[11px] text-accent pr-0.5">
                 {{ dailyRoomCountMap[day.dateStr] }}
               </span>
             </div>
           </div>
         </div>
 
-        <!-- 술 총 수량 통계 카드 -->
-        <div class="md:col-span-5 bg-white dark:bg-darkCard border border-zinc-200 dark:border-darkBorder p-5 rounded-xl shadow-sm flex flex-col justify-center space-y-5">
+        <!-- 술 총 수량 통계 카드 (4칸) -->
+        <div class="md:col-span-4 bg-white dark:bg-darkCard border border-zinc-200 dark:border-darkBorder p-4 sm:p-5 rounded-xl shadow-sm flex flex-col justify-center space-y-5">
           <div class="flex items-center justify-between border-b border-zinc-200 dark:border-darkBorder pb-4">
             <span class="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 font-semibold">술 총 수량 (선택한 날짜)</span>
-            <span class="text-2xl font-bold font-mono text-customOrange">{{ todayTotalDrinks }}병</span>
+            <span class="text-xl sm:text-2xl font-bold font-mono text-customOrange">{{ todayTotalDrinks }}병</span>
           </div>
           <div class="flex items-center justify-between">
             <span class="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 font-semibold">술 총 수량 (이번 달 전체)</span>
-            <span class="text-2xl font-bold font-mono text-accent">{{ monthTotalDrinks }}병</span>
+            <span class="text-xl sm:text-2xl font-bold font-mono text-accent">{{ monthTotalDrinks }}병</span>
           </div>
+        </div>
+
+        <!-- 수기장부 이미지 업로드 카드 (날짜당 1장: 3칸) -->
+        <div class="md:col-span-3 bg-white dark:bg-darkCard border border-zinc-200 dark:border-darkBorder p-3.5 sm:p-4 rounded-xl shadow-sm flex flex-col justify-between space-y-2.5">
+          <div class="flex justify-between items-center border-b border-zinc-200 dark:border-darkBorder pb-2">
+            <span class="text-xs font-bold text-zinc-200 tracking-wider">📒 수기장부 이미지</span>
+            <span class="text-[10px] font-mono text-zinc-400">{{ selectedDate }}</span>
+          </div>
+
+          <!-- 업로드된 수기장부 사진이 있을 때 -->
+          <div v-if="currentDayData.handwrittenPhotoUrl" class="flex-1 flex flex-col justify-between gap-2">
+            <div @click="openHandwrittenModal" class="relative w-full h-36 sm:h-40 rounded-lg overflow-hidden border border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-[#161616] cursor-pointer group">
+              <img :src="currentDayData.handwrittenPhotoUrl" alt="수기장부 이미지" class="w-full h-full object-cover group-hover:scale-105 transition duration-200">
+              <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                <span class="text-xs font-bold text-white bg-black/60 px-2.5 py-1 rounded-md">🔍 크게 보기</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <label class="flex-1 text-center py-1.5 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-200 font-semibold rounded-lg text-[11px] cursor-pointer transition">
+                변경
+                <input type="file" accept="image/*" class="hidden" @change="handleHandwrittenPhotoUpload($event)">
+              </label>
+              <button type="button" @click="removeHandwrittenPhoto" class="py-1.5 px-2.5 bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 font-bold rounded-lg text-[11px] transition">
+                삭제
+              </button>
+            </div>
+          </div>
+
+          <!-- 업로드된 수기장부 사진이 없을 때 -->
+          <label v-else class="flex-1 flex flex-col items-center justify-center min-h-[140px] border-2 border-dashed border-zinc-300 dark:border-zinc-700 hover:border-accent rounded-xl bg-zinc-50/50 dark:bg-[#1c1c1c] cursor-pointer transition p-3 text-center group">
+            <span v-if="isHandwrittenUploading" class="text-xs font-bold text-accent animate-pulse">업로드 중...</span>
+            <template v-else>
+              <span class="text-2xl mb-1.5 group-hover:scale-110 transition">📷</span>
+              <span class="text-xs font-bold text-zinc-300 group-hover:text-accent transition">수기장부 사진 업로드</span>
+              <span class="text-[10px] text-zinc-500 mt-0.5">(날짜당 1장 저장)</span>
+            </template>
+            <input type="file" accept="image/*" class="hidden" @change="handleHandwrittenPhotoUpload($event)">
+          </label>
         </div>
 
       </section>
@@ -660,7 +729,7 @@
                 </div>
               </div>
 
-              <!-- 오른쪽 컬럼: 방 내 접대원 관리 영역 (M, P 독립 토글 버튼 및 M×/P× 강조 표시) -->
+              <!-- 오른쪽 컬럼: 방 내 접대원 관리 영역 (M, P 독립 토글 버튼, 하단 안내 텍스트 배지 제거됨) -->
               <div class="sm:col-span-7 space-y-1.5 bg-zinc-50/50 dark:bg-[#202020] p-2.5 rounded-lg border border-zinc-200 dark:border-darkBorder flex flex-col justify-between">
                 <div>
                   <div class="flex justify-between items-center mb-1.5">
@@ -736,16 +805,6 @@
                         <button @click="removeGirl(roomWrap._originalRef, gIdx)" class="w-[6%] text-rose-500 font-bold py-1 text-xs shrink-0 text-center hover:bg-rose-500/10 rounded">×</button>
                       </div>
 
-                      <!-- 손님 직접 계산(M×, P×) 연결 강조 배지 줄 -->
-                      <div v-if="g.motelState === 'customer' || g.personalState === 'customer'" class="flex flex-wrap items-center gap-1.5 pl-1 pt-0.5 text-[10px]">
-                        <span v-if="g.motelState === 'customer'" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-rose-500/20 border border-rose-500/50 text-rose-300 font-bold">
-                          ⚡ M× 모텔 손님직접계산 ({{ g.name || '미입력' }} 동반)
-                        </span>
-                        <span v-if="g.personalState === 'customer'" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-500/20 border border-blue-500/50 text-blue-300 font-bold">
-                          ⚡ P× 개인비 손님직접계산 ({{ g.name || '미입력' }} 동반)
-                        </span>
-                      </div>
-
                     </div>
 
                     <div v-if="!roomWrap._originalRef.girls || roomWrap._originalRef.girls.length === 0" class="text-[10px] text-zinc-500 text-center py-4">
@@ -810,7 +869,7 @@
       <!-- 🏢 왼쪽: 당일 사무실별 TC·개인비 합산 현황 / 오른쪽: 모텔(M)·접대원 개인비(P) 결제 주체별 정산 현황 -->
       <section class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
         
-        <!-- 왼쪽 (6칸): 당일 사무실별 TC · 가게 계산 개인비(P○) 합산 정산 현황 -->
+        <!-- 왼쪽 (6칸): 당일 사무실별 TC · 가게 계산 개인비(P○) 합산 정산 현황 (TC 5만 전체 글자 빨간색 적용) -->
         <div class="lg:col-span-6 bg-white dark:bg-darkCard border border-zinc-200 dark:border-darkBorder p-4 sm:p-5 rounded-xl shadow-sm space-y-3 flex flex-col justify-between">
           <div class="space-y-3">
             <div class="flex flex-wrap justify-between items-center gap-2 border-b border-zinc-200 dark:border-darkBorder pb-2">
@@ -834,13 +893,11 @@
                     <span v-if="dIdx > 0" class="text-zinc-500 mx-1">/</span>
                     <span class="font-semibold text-zinc-100">{{ detail.name }}</span>
                     <template v-if="detail.tcFee > 0">
-                      <span class="text-zinc-400 ml-1">TC</span>
-                      <span class="text-accent font-bold ml-0.5">{{ formatKoreanFee(detail.tcFee) }}</span>
+                      <span class="text-rose-400 font-bold ml-1">TC {{ formatKoreanFee(detail.tcFee) }}</span>
                     </template>
                     <template v-if="detail.personalFee > 0">
                       <span v-if="detail.tcFee > 0" class="text-zinc-500 mx-0.5">·</span>
-                      <span class="text-blue-400 ml-0.5">개인비</span>
-                      <span class="text-blue-300 font-bold ml-0.5">{{ formatKoreanFee(detail.personalFee) }}</span>
+                      <span class="text-blue-400 font-bold ml-0.5">개인비 {{ formatKoreanFee(detail.personalFee) }}</span>
                     </template>
                   </template>
                   )
@@ -1223,6 +1280,68 @@
           };
 
           const previewGirl = ref(null);
+
+          // 수기장부 이미지 업로드 및 모달 상태
+          const isHandwrittenModalOpen = ref(false);
+          const isHandwrittenUploading = ref(false);
+
+          const openHandwrittenModal = () => {
+            isHandwrittenModalOpen.value = true;
+          };
+
+          const closeHandwrittenModal = () => {
+            isHandwrittenModalOpen.value = false;
+          };
+
+          const handleHandwrittenPhotoUpload = async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            isHandwrittenUploading.value = true;
+            syncStatus.value = '수기장부 사진 업로드 중...';
+
+            try {
+              const fileExt = file.name.split('.').pop();
+              const fileName = `handwritten_${currentVenue.value}_${selectedDate.value}_${Date.now()}.${fileExt}`;
+
+              const { data, error } = await supabaseClient.storage
+                .from(STORAGE_BUCKET)
+                .upload(fileName, file, {
+                  cacheControl: '3600',
+                  upsert: false
+                });
+
+              if (error) {
+                alert('수기장부 사진 업로드 실패: ' + error.message);
+                syncStatus.value = '업로드 실패 ❌';
+                isHandwrittenUploading.value = false;
+                return;
+              }
+
+              const { data: urlData } = supabaseClient.storage
+                .from(STORAGE_BUCKET)
+                .getPublicUrl(fileName);
+
+              if (urlData && urlData.publicUrl) {
+                currentDayData.value.handwrittenPhotoUrl = urlData.publicUrl;
+                saveData();
+              }
+            } catch (err) {
+              alert('수기장부 사진 업로드 중 오류가 발생했습니다.');
+              syncStatus.value = '업로드 오류 ❌';
+            } finally {
+              isHandwrittenUploading.value = false;
+              event.target.value = '';
+            }
+          };
+
+          const removeHandwrittenPhoto = () => {
+            if (confirm('등록된 수기장부 사진을 삭제하시겠습니까?')) {
+              currentDayData.value.handwrittenPhotoUrl = '';
+              saveData();
+              closeHandwrittenModal();
+            }
+          };
 
           const invoiceModal = ref({
             isOpen: false,
@@ -1610,8 +1729,11 @@
             if (!db.value[dStr]) {
               db.value[dStr] = {
                 rooms: [],
-                mCash: 0, mCard: 0, mCredit: 0, pCash: 0, pCard: 0
+                mCash: 0, mCard: 0, mCredit: 0, pCash: 0, pCard: 0,
+                handwrittenPhotoUrl: ''
               };
+            } else if (db.value[dStr].handwrittenPhotoUrl === undefined) {
+              db.value[dStr].handwrittenPhotoUrl = '';
             }
           };
 
@@ -2274,6 +2396,7 @@
             isLoggedIn, authError, authForm, handleLogin, handleLogout,
             roomQuickNavList, jumpToRoom, scrollToTop, scrollToLastRoom, syncStatus, addExtraItem, removeExtraItem,
             previewGirl, openPhotoModal, closePhotoModal, handlePhotoUpload, removeGirlPhoto,
+            isHandwrittenModalOpen, isHandwrittenUploading, openHandwrittenModal, closeHandwrittenModal, handleHandwrittenPhotoUpload, removeHandwrittenPhoto,
             isGirlsExpanded, isCustomersExpanded, displayedGirls, displayedCustomers,
             girlFilterOffice, girlFilterType, girlFilterStyle, resetGirlFilters,
             girlModal, openAddGirlModal, openEditGirlModal, closeGirlModal, saveGirlModal, removeStandaloneGirlOriginalIndex,

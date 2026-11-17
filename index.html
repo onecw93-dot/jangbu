@@ -1161,7 +1161,8 @@
     window.addEventListener('DOMContentLoaded', () => {
       const SUPABASE_URL = 'https://ickxgwkvkcgrehufmwut.supabase.co';
       const SUPABASE_KEY = 'sb_publishable_GLv8OIRpMqaI80yBdGng_w_Bh6Wxgqr';
-      const STORAGE_BUCKET = 'Profile image';
+      // 버킷 이름을 공백 없는 표준 형식으로 변경
+      const STORAGE_BUCKET = 'profile-images';
       const { createApp, ref, computed, onMounted } = Vue;
 
       createApp({

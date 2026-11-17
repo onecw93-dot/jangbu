@@ -20,6 +20,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
   <script>
     tailwind.config = {
       darkMode: 'class',
@@ -544,36 +545,49 @@
 
           <!-- 업로드된 수기장부 사진이 있을 때 -->
           <div v-if="currentDayData.handwrittenPhotoUrl" class="flex-1 flex flex-col justify-between gap-2">
-            <div @click="openHandwrittenModal" class="relative w-full h-36 sm:h-40 rounded-lg overflow-hidden border border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-[#161616] cursor-pointer group">
+            <div @click="!isHandwrittenUploading && openHandwrittenModal()" class="relative w-full h-36 sm:h-40 rounded-lg overflow-hidden border border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-[#161616]" :class="isHandwrittenUploading ? 'opacity-70' : 'cursor-pointer group'">
               <img :src="currentDayData.handwrittenPhotoUrl" alt="수기장부 이미지" class="w-full h-full object-cover group-hover:scale-105 transition duration-200">
-              <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+              <div v-if="!isHandwrittenUploading" class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
                 <span class="text-xs font-bold text-white bg-black/60 px-2.5 py-1 rounded-md">🔍 크게 보기</span>
               </div>
             </div>
             <div class="flex items-center gap-1.5">
-              <label class="flex-1 text-center py-1.5 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-200 font-semibold rounded-lg text-[11px] cursor-pointer transition">
+              <label :class="isHandwrittenUploading ? 'opacity-50 pointer-events-none' : 'cursor-pointer'" class="flex-1 text-center py-1.5 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-200 font-semibold rounded-lg text-[11px] transition">
                 변경
-                <input type="file" accept="image/*" class="hidden" @change="handleHandwrittenPhotoUpload($event)">
+                <input type="file" accept="image/*,.heic,.heif" class="hidden" :disabled="isHandwrittenUploading" @change="handleHandwrittenPhotoUpload($event)">
               </label>
-              <button type="button" @click="removeHandwrittenPhoto" class="py-1.5 px-2.5 bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 font-bold rounded-lg text-[11px] transition">
+              <button type="button" :disabled="isHandwrittenUploading" @click="removeHandwrittenPhoto" class="py-1.5 px-2.5 bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 font-bold rounded-lg text-[11px] transition disabled:opacity-40">
                 삭제
               </button>
             </div>
           </div>
 
-          <!-- 업로드된 수기장부 사진이 없을 때 (카드 전체 클릭 및 드래그 앤 드롭 업로드 영역) -->
-          <label v-else 
-                 @dragover.prevent @dragleave.prevent 
+          <!-- 업로드된 수기장부 사진이 없을 때 -->
+          <label v-else
+                 @dragover.prevent @dragleave.prevent
                  @drop.prevent="handleHandwrittenDrop($event)"
-                 class="flex-1 flex flex-col items-center justify-center min-h-[140px] border-2 border-dashed border-zinc-300 dark:border-zinc-700 hover:border-accent rounded-xl bg-zinc-50/50 dark:bg-[#1c1c1c] cursor-pointer transition p-3 text-center group relative">
-            <span v-if="isHandwrittenUploading" class="text-xs font-bold text-accent animate-pulse">이미지 최적화 및 업로드 중...</span>
+                 :class="isHandwrittenUploading ? 'opacity-70 pointer-events-none' : 'cursor-pointer hover:border-accent'"
+                 class="flex-1 flex flex-col items-center justify-center min-h-[140px] border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl bg-zinc-50/50 dark:bg-[#1c1c1c] transition p-3 text-center group relative">
+            <span v-if="isHandwrittenUploading" class="text-xs font-bold text-accent animate-pulse">{{ handwrittenUploadStage }}</span>
             <template v-else>
               <div class="w-10 h-10 rounded-full bg-accent/10 border border-accent/30 text-accent flex items-center justify-center text-xl font-bold mb-1.5 group-hover:scale-110 transition">+</div>
               <span class="text-xs font-bold text-zinc-300 group-hover:text-accent transition">수기장부 사진 업로드</span>
               <span class="text-[10px] text-zinc-500 mt-0.5">(클릭 또는 파일을 여기에 드래그)</span>
             </template>
-            <input type="file" accept="image/*" class="hidden" @change="handleHandwrittenPhotoUpload($event)">
+            <input type="file" accept="image/*,.heic,.heif" class="hidden" :disabled="isHandwrittenUploading" @change="handleHandwrittenPhotoUpload($event)">
           </label>
+
+          <div v-if="isHandwrittenUploading || handwrittenUploadError" class="space-y-1.5 rounded-lg border border-zinc-200 dark:border-darkBorder bg-zinc-50 dark:bg-[#1a1a1a] p-2.5">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-[11px] font-semibold" :class="handwrittenUploadError ? 'text-rose-400' : 'text-accent'">{{ handwrittenUploadError ? '처리 실패' : handwrittenUploadStage }}</span>
+              <span v-if="isHandwrittenUploading" class="text-[10px] text-zinc-400">진행 중</span>
+            </div>
+            <div v-if="isHandwrittenUploading" class="h-1.5 rounded-full bg-zinc-200 dark:bg-zinc-700 overflow-hidden">
+              <div class="h-full bg-accent rounded-full transition-all duration-300" :style="{ width: handwrittenUploadProgress + '%' }"></div>
+            </div>
+            <div v-if="handwrittenUploadError" class="text-[10px] leading-relaxed text-rose-400">{{ handwrittenUploadError }}</div>
+            <button v-if="handwrittenUploadError" type="button" @click="handwrittenUploadError = ''" class="text-[10px] text-zinc-400 underline">닫기</button>
+          </div>
         </div>
 
       </section>
@@ -1282,55 +1296,119 @@
 
           const previewGirl = ref(null);
 
-          // 고해상도 카메라/P3 색상 프로필 이미지 정규화 및 안전 압축 변환 헬퍼
-          const normalizeAndCompressImage = (file) => {
-            return new Promise((resolve) => {
-              const reader = new FileReader();
-              reader.onload = (e) => {
-                const img = new Image();
-                img.onload = () => {
-                  const canvas = document.createElement('canvas');
-                  let width = img.width;
-                  let height = img.height;
+          // 수기장부 전용 이미지 표준화: 원본을 JPG로 위장하지 않고 검증된 JPEG만 반환
+          const normalizeHandwrittenImage = async (file, onStage) => {
+            const fail = (message) => { const error = new Error(message); error.handwrittenImageError = true; throw error; };
+            if (!file || !file.size) fail('선택한 파일이 비어 있거나 올바른 파일이 아닙니다.');
 
-                  const MAX_SIZE = 1600;
-                  if (width > height && width > MAX_SIZE) {
-                    height = Math.round((height * MAX_SIZE) / width);
-                    width = MAX_SIZE;
-                  } else if (height > width && height > MAX_SIZE) {
-                    width = Math.round((width * MAX_SIZE) / height);
-                    height = MAX_SIZE;
-                  }
+            const fileName = (file.name || '').toLowerCase();
+            const mime = (file.type || '').toLowerCase();
+            const isHeic = mime.includes('heic') || mime.includes('heif') || /\.(heic|heif)$/.test(fileName);
+            let sourceBlob = file;
 
-                  canvas.width = width;
-                  canvas.height = height;
-                  const ctx = canvas.getContext('2d');
-                  ctx.drawImage(img, 0, 0, width, height);
+            onStage('사진 형식 확인 중...', 8);
+            if (isHeic) {
+              onStage('HEIC 사진 변환 중...', 15);
+              if (typeof window.heic2any !== 'function') {
+                fail('이 사진은 HEIC/HEIF 형식이며 현재 브라우저에서 바로 읽을 수 없습니다. HEIC 변환 모듈을 불러오지 못했으니 JPG로 변환한 뒤 다시 선택해 주세요.');
+              }
+              try {
+                const converted = await window.heic2any({ blob: file, toType: 'image/jpeg', quality: 0.92 });
+                sourceBlob = Array.isArray(converted) ? converted[0] : converted;
+                if (!(sourceBlob instanceof Blob) || !sourceBlob.size) fail('HEIC 사진을 JPEG로 변환했지만 결과 파일이 비어 있습니다.');
+              } catch (error) {
+                if (error && error.handwrittenImageError) throw error;
+                fail('HEIC/HEIF 사진을 변환하지 못했습니다. 갤러리에서 JPG 형식으로 내보낸 뒤 다시 업로드해 주세요.');
+              }
+            } else if (!(mime.startsWith('image/') || /\.(jpg|jpeg|png|webp|gif|bmp|avif)$/.test(fileName))) {
+              fail('지원하지 않는 파일 형식입니다. JPG, PNG, WebP 또는 HEIC 사진을 선택해 주세요.');
+            }
 
-                  canvas.toBlob((blob) => {
-                    const safeFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
-                      type: 'image/jpeg',
-                      lastModified: Date.now()
-                    });
-                    resolve(safeFile);
-                  }, 'image/jpeg', 0.82);
-                };
-                img.onerror = () => {
-                  resolve(file);
-                };
-                img.src = e.target.result;
-              };
-              reader.onerror = () => resolve(file);
-              reader.readAsDataURL(file);
-            });
+            onStage('사진 읽기 및 방향 보정 중...', 25);
+            let bitmap = null;
+            let img = null;
+            let objectUrl = null;
+            let width = 0;
+            let height = 0;
+            try {
+              if (typeof createImageBitmap === 'function') {
+                try {
+                  bitmap = await createImageBitmap(sourceBlob, { imageOrientation: 'from-image' });
+                  width = bitmap.width;
+                  height = bitmap.height;
+                } catch (_) { bitmap = null; }
+              }
+
+              if (!bitmap) {
+                objectUrl = URL.createObjectURL(sourceBlob);
+                img = await new Promise((resolve, reject) => {
+                  const image = new Image();
+                  image.onload = () => resolve(image);
+                  image.onerror = () => reject(new Error('이미지 디코딩 실패'));
+                  image.src = objectUrl;
+                }).catch(() => null);
+                if (!img) {
+                  if (isHeic) fail('HEIC 사진을 읽지 못했습니다. JPG로 변환한 뒤 다시 업로드해 주세요.');
+                  fail('사진 파일을 읽지 못했습니다. 파일이 손상되었거나 브라우저가 해당 이미지 형식을 지원하지 않을 수 있습니다.');
+                }
+                width = img.naturalWidth || img.width;
+                height = img.naturalHeight || img.height;
+              }
+
+              if (!width || !height) fail('사진의 가로·세로 정보를 확인할 수 없습니다.');
+              const MAX_SIZE = 2000;
+              const scale = Math.min(1, MAX_SIZE / Math.max(width, height));
+              const outWidth = Math.max(1, Math.round(width * scale));
+              const outHeight = Math.max(1, Math.round(height * scale));
+              onStage('이미지 크기 조정 및 압축 중...', 48);
+
+              const canvas = document.createElement('canvas');
+              canvas.width = outWidth;
+              canvas.height = outHeight;
+              const ctx = canvas.getContext('2d', { alpha: false });
+              if (!ctx) fail('브라우저가 이미지 변환용 캔버스를 생성하지 못했습니다. 브라우저를 새로고침한 뒤 다시 시도해 주세요.');
+              ctx.fillStyle = '#ffffff';
+              ctx.fillRect(0, 0, outWidth, outHeight);
+              ctx.drawImage(bitmap || img, 0, 0, outWidth, outHeight);
+
+              onStage('JPEG 변환 결과 확인 중...', 65);
+              const jpegBlob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.85));
+              canvas.width = 1;
+              canvas.height = 1;
+              if (!jpegBlob || !jpegBlob.size || jpegBlob.type !== 'image/jpeg') {
+                fail('JPG 변환 결과가 정상적이지 않습니다. 사진 크기가 너무 크거나 기기의 메모리가 부족할 수 있습니다.');
+              }
+              if (jpegBlob.size < 4) fail('변환된 이미지 파일의 크기가 비정상적입니다.');
+              const header = new Uint8Array(await jpegBlob.slice(0, 3).arrayBuffer());
+              if (header[0] !== 0xFF || header[1] !== 0xD8 || header[2] !== 0xFF) {
+                fail('변환 결과가 유효한 JPEG 파일이 아닙니다. 원본 사진을 다시 선택해 주세요.');
+              }
+              const safeName = (file.name || 'handwritten').replace(/\.[^/.]+$/, '').replace(/[^a-zA-Z0-9가-힣_-]/g, '_') + '.jpg';
+              return new File([jpegBlob], safeName, { type: 'image/jpeg', lastModified: Date.now() });
+            } catch (error) {
+              if (error && error.handwrittenImageError) throw error;
+              if (error && (error.name === 'SecurityError' || error.name === 'InvalidStateError')) {
+                fail('브라우저가 사진을 처리하지 못했습니다. 브라우저를 새로고침하거나 사진을 JPG로 다시 저장해 주세요.');
+              }
+              if (error && error.name === 'RangeError') {
+                fail('사진 해상도가 너무 커서 처리할 수 없습니다. 사진 크기를 줄인 뒤 다시 업로드해 주세요.');
+              }
+              fail('사진 변환 중 오류가 발생했습니다. 파일이 손상되었거나 기기의 메모리가 부족할 수 있습니다.');
+            } finally {
+              if (bitmap && typeof bitmap.close === 'function') bitmap.close();
+              if (objectUrl) URL.revokeObjectURL(objectUrl);
+            }
           };
 
-          // 수기장부 이미지 업로드 및 모달 상태
+          // 수기장부 이미지 업로드 및 진행 상태
           const isHandwrittenModalOpen = ref(false);
           const isHandwrittenUploading = ref(false);
+          const handwrittenUploadStage = ref('');
+          const handwrittenUploadProgress = ref(0);
+          const handwrittenUploadError = ref('');
 
           const openHandwrittenModal = () => {
-            isHandwrittenModalOpen.value = true;
+            if (!isHandwrittenUploading.value) isHandwrittenModalOpen.value = true;
           };
 
           const closeHandwrittenModal = () => {
@@ -1338,62 +1416,111 @@
           };
 
           const handleHandwrittenPhotoUpload = async (event) => {
-            const file = event.target.files[0];
+            const file = event.target.files && event.target.files[0];
             if (!file) return;
             await uploadHandwrittenFile(file);
             event.target.value = '';
           };
 
           const handleHandwrittenDrop = async (event) => {
-            const file = event.dataTransfer.files[0];
+            if (isHandwrittenUploading.value) return;
+            const file = event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0];
             if (!file) return;
             await uploadHandwrittenFile(file);
           };
 
-          // 수기장부 업로드 로직 (upsert: false 및 고유 파일명 적용)
+          const waitForImageLoad = (url) => new Promise((resolve, reject) => {
+            const image = new Image();
+            image.onload = () => resolve(true);
+            image.onerror = () => reject(new Error('저장된 이미지 URL에서 사진을 불러오지 못했습니다.'));
+            image.src = url;
+          });
+
           const uploadHandwrittenFile = async (rawFile) => {
+            if (isHandwrittenUploading.value) return;
+            const previousUrl = currentDayData.value.handwrittenPhotoUrl || '';
+            let localPreviewUrl = '';
+            let uploadedPath = '';
             isHandwrittenUploading.value = true;
-            syncStatus.value = '이미지 최적화 중...';
+            handwrittenUploadError.value = '';
+            handwrittenUploadProgress.value = 3;
+            handwrittenUploadStage.value = '사진 형식 확인 중...';
 
             try {
-              const file = await normalizeAndCompressImage(rawFile);
-              const localPreviewUrl = URL.createObjectURL(file);
-              currentDayData.value.handwrittenPhotoUrl = localPreviewUrl;
+              const file = await normalizeHandwrittenImage(rawFile, (stage, progress) => {
+                handwrittenUploadStage.value = stage;
+                handwrittenUploadProgress.value = progress;
+                syncStatus.value = stage;
+              });
 
+              handwrittenUploadStage.value = '변환된 사진 미리보기 확인 중...';
+              handwrittenUploadProgress.value = 72;
+              localPreviewUrl = URL.createObjectURL(file);
+              await waitForImageLoad(localPreviewUrl);
+
+              handwrittenUploadStage.value = 'Supabase에 사진 업로드 중...';
+              handwrittenUploadProgress.value = 80;
               syncStatus.value = '수기장부 사진 업로드 중...';
-
-              const fileExt = 'jpg';
-              // 고유 파일명 생성
-              const safeFileName = `img_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
-
-              const { data, error } = await supabaseClient.storage
+              const safeFileName = `handwritten_${Date.now()}_${Math.random().toString(36).substring(2, 9)}.jpg`;
+              const { error } = await supabaseClient.storage
                 .from(STORAGE_BUCKET)
                 .upload(safeFileName, file, {
                   cacheControl: '3600',
-                  upsert: false // 충돌 대기열 방지
+                  upsert: false,
+                  contentType: 'image/jpeg'
                 });
 
               if (error) {
-                alert('수기장부 사진 업로드 실패: ' + error.message);
-                syncStatus.value = '업로드 실패 ❌';
-                isHandwrittenUploading.value = false;
-                return;
+                const message = error.message || '서버가 업로드를 거부했습니다.';
+                throw new Error('서버 업로드 실패: ' + message);
               }
+              uploadedPath = safeFileName;
 
-              // 업로드 성공 후 즉시 getPublicUrl 호출
-              const { data: urlData } = supabaseClient.storage
+              handwrittenUploadStage.value = '서버에 저장된 사진 확인 중...';
+              handwrittenUploadProgress.value = 90;
+              const { data: urlData, error: urlError } = supabaseClient.storage
                 .from(STORAGE_BUCKET)
                 .getPublicUrl(safeFileName);
-
-              if (urlData && urlData.publicUrl) {
-                currentDayData.value.handwrittenPhotoUrl = urlData.publicUrl + '?t=' + Date.now();
-                saveData();
-                syncStatus.value = '업로드 완료 ✅';
+              if (urlError || !urlData || !urlData.publicUrl) {
+                throw new Error('사진은 서버에 업로드됐지만 공개 이미지 주소를 가져오지 못했습니다.');
               }
-            } catch (err) {
-              alert('수기장부 사진 처리 중 오류가 발생했습니다.');
-              syncStatus.value = '업로드 오류 ❌';
+
+              const finalUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+              await waitForImageLoad(finalUrl);
+
+              handwrittenUploadStage.value = '장부 데이터 저장 중...';
+              handwrittenUploadProgress.value = 96;
+              currentDayData.value.handwrittenPhotoUrl = finalUrl;
+              saveData();
+              let journalSaved = false;
+              for (let attempt = 0; attempt < 75; attempt++) {
+                await new Promise(resolve => setTimeout(resolve, 200));
+                if (syncStatus.value === '저장됨 ✅') { journalSaved = true; break; }
+                if (syncStatus.value === '저장 실패 ❌' || syncStatus.value === '네트워크 불안정') {
+                  throw new Error('사진 업로드는 완료됐지만 장부 데이터 저장에 실패했습니다. 네트워크 연결을 확인한 뒤 다시 시도해 주세요.');
+                }
+              }
+              if (!journalSaved) {
+                throw new Error('사진 업로드는 완료됐지만 장부 저장 확인 시간이 초과됐습니다. 인터넷 연결을 확인하고 장부를 새로고침하기 전에 저장 상태를 확인해 주세요.');
+              }
+
+              handwrittenUploadProgress.value = 100;
+              handwrittenUploadStage.value = '업로드 및 저장 완료';
+              syncStatus.value = '업로드 완료 ✅';
+              if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
+            } catch (error) {
+              if (uploadedPath) {
+                // 장부 저장 실패 시 새로 올린 파일은 남겨 두되 기존 장부 URL은 복원
+              }
+              currentDayData.value.handwrittenPhotoUrl = previousUrl;
+              const message = error && error.message ? error.message : '알 수 없는 오류가 발생했습니다.';
+              handwrittenUploadError.value = message;
+              handwrittenUploadStage.value = '업로드 실패';
+              handwrittenUploadProgress.value = 0;
+              syncStatus.value = '업로드 실패 ❌';
+              alert('수기장부 사진 처리 실패\n\n' + message);
             } finally {
+              if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
               isHandwrittenUploading.value = false;
             }
           };
@@ -1603,7 +1730,7 @@
             previewGirl.value = null;
           };
 
-          // 접대원 프로필 사진 업로드 로직 (upsert: false 및 고유 파일명 적용)
+          // [수정됨] 접대원 프로필 사진 업로드 로직 (upsert: false 및 안전한 고유 파일명/URL 획득)
           const handlePhotoUpload = async (event, girlObj) => {
             const rawFile = event.target.files[0];
             if (!rawFile) return;
@@ -1618,14 +1745,13 @@
               syncStatus.value = '사진 업로드 중...';
 
               const fileExt = 'jpg';
-              // 고유 파일명 생성
               const safeFileName = `img_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
 
               const { data, error } = await supabaseClient.storage
                 .from(STORAGE_BUCKET)
                 .upload(safeFileName, file, {
                   cacheControl: '3600',
-                  upsert: false // 충돌 대기열 방지
+                  upsert: false
                 });
 
               if (error) {
@@ -1635,15 +1761,16 @@
                 return;
               }
 
-              // 업로드 성공 후 즉시 getPublicUrl 호출
               const { data: urlData } = supabaseClient.storage
                 .from(STORAGE_BUCKET)
                 .getPublicUrl(safeFileName);
 
               if (urlData && urlData.publicUrl) {
-                girlObj.photoUrl = urlData.publicUrl + '?t=' + Date.now();
+                girlObj.photoUrl = `${urlData.publicUrl}?t=${Date.now()}`;
                 saveData();
                 syncStatus.value = '업로드 완료 ✅';
+              } else {
+                alert('공개 URL을 가져오지 못했습니다.');
               }
             } catch (err) {
               alert('사진 업로드 중 오류가 발생했습니다.');
@@ -2468,7 +2595,7 @@
             isLoggedIn, authError, authForm, handleLogin, handleLogout,
             roomQuickNavList, jumpToRoom, scrollToTop, scrollToLastRoom, syncStatus, addExtraItem, removeExtraItem,
             previewGirl, openPhotoModal, closePhotoModal, handlePhotoUpload, removeGirlPhoto,
-            isHandwrittenModalOpen, isHandwrittenUploading, openHandwrittenModal, closeHandwrittenModal, handleHandwrittenPhotoUpload, handleHandwrittenDrop, removeHandwrittenPhoto,
+            isHandwrittenModalOpen, isHandwrittenUploading, handwrittenUploadStage, handwrittenUploadProgress, handwrittenUploadError, openHandwrittenModal, closeHandwrittenModal, handleHandwrittenPhotoUpload, handleHandwrittenDrop, removeHandwrittenPhoto,
             isGirlsExpanded, isCustomersExpanded, displayedGirls, displayedCustomers,
             girlFilterOffice, girlFilterType, girlFilterStyle, resetGirlFilters,
             girlModal, openAddGirlModal, openEditGirlModal, closeGirlModal, saveGirlModal, removeStandaloneGirlOriginalIndex,

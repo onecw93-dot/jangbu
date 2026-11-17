@@ -566,7 +566,7 @@
                  @dragover.prevent @dragleave.prevent 
                  @drop.prevent="handleHandwrittenDrop($event)"
                  class="flex-1 flex flex-col items-center justify-center min-h-[140px] border-2 border-dashed border-zinc-300 dark:border-zinc-700 hover:border-accent rounded-xl bg-zinc-50/50 dark:bg-[#1c1c1c] cursor-pointer transition p-3 text-center group relative">
-            <span v-if="isHandwrittenUploading" class="text-xs font-bold text-accent animate-pulse">업로드 중...</span>
+            <span v-if="isHandwrittenUploading" class="text-xs font-bold text-accent animate-pulse">이미지 최적화 및 업로드 중...</span>
             <template v-else>
               <div class="w-10 h-10 rounded-full bg-accent/10 border border-accent/30 text-accent flex items-center justify-center text-xl font-bold mb-1.5 group-hover:scale-110 transition">+</div>
               <span class="text-xs font-bold text-zinc-300 group-hover:text-accent transition">수기장부 사진 업로드</span>
@@ -1282,6 +1282,52 @@
 
           const previewGirl = ref(null);
 
+          // 고해상도 카메라/P3 색상 프로필 이미지 정규화 및 안전 압축 변환 헬퍼
+          const normalizeAndCompressImage = (file) => {
+            return new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                  const canvas = document.createElement('canvas');
+                  let width = img.width;
+                  let height = img.height;
+
+                  // 고해상도 카메라 부하 방지를 위해 최대 긴 축 1600px로 조절
+                  const MAX_SIZE = 1600;
+                  if (width > height && width > MAX_SIZE) {
+                    height = Math.round((height * MAX_SIZE) / width);
+                    width = MAX_SIZE;
+                  } else if (height > width && height > MAX_SIZE) {
+                    width = Math.round((width * MAX_SIZE) / height);
+                    height = MAX_SIZE;
+                  }
+
+                  canvas.width = width;
+                  canvas.height = height;
+                  const ctx = canvas.getContext('2d');
+                  ctx.drawImage(img, 0, 0, width, height);
+
+                  // sRGB 표준 JPEG로 강제 변환하여 브라우저 깨짐 및 업로드 멈춤 원인 차단
+                  canvas.toBlob((blob) => {
+                    const safeFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+                      type: 'image/jpeg',
+                      lastModified: Date.now()
+                    });
+                    resolve(safeFile);
+                  }, 'image/jpeg', 0.82);
+                };
+                img.onerror = () => {
+                  // 디코딩 실패 시 원본 그대로 반환
+                  resolve(file);
+                };
+                img.src = e.target.result;
+              };
+              reader.onerror = () => resolve(file);
+              reader.readAsDataURL(file);
+            });
+          };
+
           // 수기장부 이미지 업로드 및 모달 상태
           const isHandwrittenModalOpen = ref(false);
           const isHandwrittenUploading = ref(false);
@@ -1307,16 +1353,18 @@
             await uploadHandwrittenFile(file);
           };
 
-          const uploadHandwrittenFile = async (file) => {
+          const uploadHandwrittenFile = async (rawFile) => {
             isHandwrittenUploading.value = true;
-            syncStatus.value = '수기장부 사진 업로드 중...';
+            syncStatus.value = '이미지 최적화 중...';
 
             try {
-              // 캔버스 압축 단계를 제거하고 원본 파일 그대로 업로드하여 부하 방지
+              const file = await normalizeAndCompressImage(rawFile);
               const localPreviewUrl = URL.createObjectURL(file);
               currentDayData.value.handwrittenPhotoUrl = localPreviewUrl;
 
-              const fileExt = file.name.split('.').pop() || 'jpg';
+              syncStatus.value = '수기장부 사진 업로드 중...';
+
+              const fileExt = 'jpg';
               const safeFileName = `hw_${currentVenue.value}_${selectedDate.value.replace(/-/g, '')}_${Date.now()}.${fileExt}`;
 
               const { data, error } = await supabaseClient.storage
@@ -1556,17 +1604,19 @@
           };
 
           const handlePhotoUpload = async (event, girlObj) => {
-            const file = event.target.files[0];
-            if (!file) return;
+            const rawFile = event.target.files[0];
+            if (!rawFile) return;
 
             girlObj.isUploading = true;
-            syncStatus.value = '사진 업로드 중...';
+            syncStatus.value = '사진 최적화 중...';
 
             try {
-              // 원본 파일 그대로 업로드하여 스마트폰 카메라 부하 방지
+              const file = await normalizeAndCompressImage(rawFile);
               girlObj.photoUrl = URL.createObjectURL(file);
 
-              const fileExt = file.name.split('.').pop() || 'jpg';
+              syncStatus.value = '사진 업로드 중...';
+
+              const fileExt = 'jpg';
               const safeFileName = `girl_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
 
               const { data, error } = await supabaseClient.storage

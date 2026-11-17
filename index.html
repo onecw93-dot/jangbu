@@ -732,7 +732,7 @@
                 </div>
               </div>
 
-              <!-- 오른쪽 컬럼: 방 내 접대원 관리 영역 (M, P 독립 토글 버튼, 하단 안내 텍스트 배지 제거됨) -->
+              <!-- 오른쪽 컬럼: 방 내 접대원 관리 영역 (M, P 독립 토글 버튼) -->
               <div class="sm:col-span-7 space-y-1.5 bg-zinc-50/50 dark:bg-[#202020] p-2.5 rounded-lg border border-zinc-200 dark:border-darkBorder flex flex-col justify-between">
                 <div>
                   <div class="flex justify-between items-center mb-1.5">
@@ -751,7 +751,7 @@
                           {{ getMotelLabel(g.motelState) }}
                         </button>
 
-                        <!-- P 버튼 (파란색 계열 테마) -->
+                        <!-- P 버튼 -->
                         <button type="button" @click="cycleGirlPersonal(g)" :class="getPersonalBtnClass(g.personalState)" class="px-1.5 py-1 text-[11px] font-extrabold rounded shrink-0 transition" :title="getPersonalTitle(g.personalState)">
                           {{ getPersonalLabel(g.personalState) }}
                         </button>
@@ -872,7 +872,7 @@
       <!-- 🏢 왼쪽: 당일 사무실별 TC·개인비 합산 현황 / 오른쪽: 모텔(M)·접대원 개인비(P) 결제 주체별 정산 현황 -->
       <section class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
         
-        <!-- 왼쪽 (6칸): 당일 사무실별 TC · 가게 계산 개인비(P○) 합산 정산 현황 (TC 5만 전체 글자 빨간색 적용) -->
+        <!-- 왼쪽 (6칸): 당일 사무실별 TC · 가게 계산 개인비(P○) 합산 정산 현황 -->
         <div class="lg:col-span-6 bg-white dark:bg-darkCard border border-zinc-200 dark:border-darkBorder p-4 sm:p-5 rounded-xl shadow-sm space-y-3 flex flex-col justify-between">
           <div class="space-y-3">
             <div class="flex flex-wrap justify-between items-center gap-2 border-b border-zinc-200 dark:border-darkBorder pb-2">
@@ -914,7 +914,7 @@
           </div>
         </div>
 
-        <!-- 오른쪽 (6칸): 모텔(M) · 접대원 개인비(P) 결제 주체별 정산 현황 (가게 계산 강조 표기) -->
+        <!-- 오른쪽 (6칸): 모텔(M) · 접대원 개인비(P) 결제 주체별 정산 현황 -->
         <div class="lg:col-span-6 bg-white dark:bg-darkCard border border-zinc-200 dark:border-darkBorder p-4 sm:p-5 rounded-xl shadow-sm flex flex-col justify-between space-y-3">
           <div class="flex items-center justify-between border-b border-zinc-200 dark:border-darkBorder pb-2">
             <span class="text-xs text-zinc-200 font-bold tracking-wider">[ 모텔(M) · 접대원 개인비(P) 결제 주체별 정산 현황 ]</span>
@@ -922,7 +922,7 @@
           </div>
           
           <div class="grid grid-cols-2 gap-3 text-xs flex-1 items-stretch">
-            <!-- 모텔비 (M) 카드: 가게 계산 강조 -->
+            <!-- 모텔비 (M) 카드 -->
             <div class="bg-zinc-50 dark:bg-[#1a1a1a] p-3 rounded-lg border border-zinc-200 dark:border-darkBorder flex flex-col justify-center space-y-2">
               <div class="font-bold text-rose-400 text-xs flex items-center justify-between">
                 <span>🏨 모텔비 (M) 현황</span>
@@ -937,7 +937,7 @@
               </div>
             </div>
 
-            <!-- 개인비 (P) 카드: 가게 계산 강조 -->
+            <!-- 개인비 (P) 카드 -->
             <div class="bg-zinc-50 dark:bg-[#1a1a1a] p-3 rounded-lg border border-zinc-200 dark:border-darkBorder flex flex-col justify-center space-y-2">
               <div class="font-bold text-blue-400 text-xs flex items-center justify-between">
                 <span>💎 개인비 (P) 현황</span>
@@ -956,7 +956,7 @@
 
       </section>
 
-      <!-- 접대원 & 손님 통합 목록 현황판 (상단 헤더 + 하단 펼치기/접기 버튼 모두 지원) -->
+      <!-- 접대원 & 손님 통합 목록 현황판 -->
       <section class="grid grid-cols-1 xl:grid-cols-2 gap-4">
         
         <!-- 왼쪽: 접대원 통합 현황판 -->
@@ -968,7 +968,6 @@
                 <span class="text-[10px] bg-customOrange/10 text-customOrange px-2 py-0.5 rounded font-bold">총 {{ filteredGirls.length }}명</span>
               </div>
               <div class="flex items-center gap-1.5">
-                <!-- 상단 접대원 추가 왼쪽 펼치기/접기 버튼 -->
                 <button v-if="filteredGirls.length > 5 && !searchQuery.trim() && girlFilterOffice === '전체' && girlFilterType === '전체' && girlFilterStyle === '전체'"
                         type="button" @click="isGirlsExpanded = !isGirlsExpanded"
                         class="text-xs bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-customOrange font-bold px-2.5 py-1 rounded transition">
@@ -1067,7 +1066,6 @@
                 <span class="text-[10px] bg-accent/10 text-accent px-2 py-0.5 rounded font-bold">총 {{ filteredCustomers.length }}명</span>
               </div>
               <div class="flex items-center gap-1.5">
-                <!-- 상단 손님 추가 왼쪽 펼치기/접기 버튼 -->
                 <button v-if="filteredCustomers.length > 5 && !searchQuery.trim()"
                         type="button" @click="isCustomersExpanded = !isCustomersExpanded"
                         class="text-xs bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-accent font-bold px-2.5 py-1 rounded transition">
@@ -1284,45 +1282,6 @@
 
           const previewGirl = ref(null);
 
-          // 모바일 고용량/HEIC 카메라 사진 자동 표준 JPG 변환 헬퍼 함수
-          const convertImageToJpeg = (file) => {
-            return new Promise((resolve) => {
-              const reader = new FileReader();
-              reader.onload = (e) => {
-                const img = new Image();
-                img.onload = () => {
-                  const canvas = document.createElement('canvas');
-                  let width = img.width;
-                  let height = img.height;
-
-                  const MAX_SIZE = 1600;
-                  if (width > height && width > MAX_SIZE) {
-                    height = Math.round((height * MAX_SIZE) / width);
-                    width = MAX_SIZE;
-                  } else if (height > width && height > MAX_SIZE) {
-                    width = Math.round((width * MAX_SIZE) / height);
-                    height = MAX_SIZE;
-                  }
-
-                  canvas.width = width;
-                  canvas.height = height;
-                  const ctx = canvas.getContext('2d');
-                  ctx.drawImage(img, 0, 0, width, height);
-
-                  canvas.toBlob((blob) => {
-                    const newFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
-                      type: 'image/jpeg',
-                      lastModified: Date.now()
-                    });
-                    resolve(newFile);
-                  }, 'image/jpeg', 0.85);
-                };
-                img.src = e.target.result;
-              };
-              reader.readAsDataURL(file);
-            });
-          };
-
           // 수기장부 이미지 업로드 및 모달 상태
           const isHandwrittenModalOpen = ref(false);
           const isHandwrittenUploading = ref(false);
@@ -1348,18 +1307,16 @@
             await uploadHandwrittenFile(file);
           };
 
-          const uploadHandwrittenFile = async (rawFile) => {
+          const uploadHandwrittenFile = async (file) => {
             isHandwrittenUploading.value = true;
-            syncStatus.value = '사진 최적화 중...';
+            syncStatus.value = '수기장부 사진 업로드 중...';
 
             try {
-              const file = await convertImageToJpeg(rawFile);
+              // 캔버스 압축 단계를 제거하고 원본 파일 그대로 업로드하여 부하 방지
               const localPreviewUrl = URL.createObjectURL(file);
               currentDayData.value.handwrittenPhotoUrl = localPreviewUrl;
 
-              syncStatus.value = '수기장부 사진 업로드 중...';
-
-              const fileExt = 'jpg';
+              const fileExt = file.name.split('.').pop() || 'jpg';
               const safeFileName = `hw_${currentVenue.value}_${selectedDate.value.replace(/-/g, '')}_${Date.now()}.${fileExt}`;
 
               const { data, error } = await supabaseClient.storage
@@ -1599,19 +1556,17 @@
           };
 
           const handlePhotoUpload = async (event, girlObj) => {
-            const rawFile = event.target.files[0];
-            if (!rawFile) return;
+            const file = event.target.files[0];
+            if (!file) return;
 
             girlObj.isUploading = true;
-            syncStatus.value = '사진 최적화 중...';
+            syncStatus.value = '사진 업로드 중...';
 
             try {
-              const file = await convertImageToJpeg(rawFile);
+              // 원본 파일 그대로 업로드하여 스마트폰 카메라 부하 방지
               girlObj.photoUrl = URL.createObjectURL(file);
 
-              syncStatus.value = '사진 업로드 중...';
-
-              const fileExt = 'jpg';
+              const fileExt = file.name.split('.').pop() || 'jpg';
               const safeFileName = `girl_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
 
               const { data, error } = await supabaseClient.storage

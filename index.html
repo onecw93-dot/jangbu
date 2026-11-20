@@ -170,11 +170,11 @@
                   모텔비
                 </div>
                 <div class="col-span-3 text-right font-mono text-zinc-600">
-                  {{ (invoiceModal.mode === 'cash' ? 50000 : 100000).toLocaleString() }}
+                  50,000
                 </div>
                 <div class="col-span-1 text-center font-bold text-zinc-900">{{ invoiceModalStoreMotelItems.count }}</div>
                 <div class="col-span-3 text-right font-mono font-bold text-zinc-950 pr-1">
-                  {{ (invoiceModalStoreMotelItems.count * (invoiceModal.mode === 'cash' ? 50000 : 100000)).toLocaleString() }}
+                  {{ (invoiceModalStoreMotelItems.count * 50000).toLocaleString() }}
                 </div>
               </div>
 
@@ -183,10 +183,12 @@
                 <div class="col-span-5 text-left pl-1 font-semibold text-zinc-900 truncate">
                   개인비
                 </div>
-                <div class="col-span-3 text-right font-mono text-zinc-600">200,000</div>
+                <div class="col-span-3 text-right font-mono text-zinc-600">
+                  {{ (invoiceModal.mode === 'cash' ? 200000 : 250000).toLocaleString() }}
+                </div>
                 <div class="col-span-1 text-center font-bold text-zinc-900">{{ invoiceModalStorePersonalItems.count }}</div>
                 <div class="col-span-3 text-right font-mono font-bold text-zinc-950 pr-1">
-                  {{ (invoiceModalStorePersonalItems.count * 200000).toLocaleString() }}
+                  {{ (invoiceModalStorePersonalItems.count * (invoiceModal.mode === 'cash' ? 200000 : 250000)).toLocaleString() }}
                 </div>
               </div>
 
@@ -578,7 +580,7 @@
                 변경
                 <input type="file" accept="image/*,.heic,.heif" class="hidden" :disabled="isHandwrittenUploading" @change="handleHandwrittenPhotoUpload($event)">
               </label>
-              <button type="button" :disabled="isHandwrittenUploading" @click="removeHandwrittenPhoto" class="py-1.5 px-2.5 bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 font-bold rounded-lg text-[11px] transition disabled:opacity:40">
+              <button type="button" :disabled="isHandwrittenUploading" @click="removeHandwrittenPhoto" class="py-1.5 px-2.5 bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 font-bold rounded-lg text-[11px] transition disabled:opacity-40">
                 삭제
               </button>
             </div>
@@ -2366,8 +2368,8 @@
             let extra = 0;
             if (r.rtChecked) extra += 20000;
             
-            const motelUnit = mode === 'cash' ? 50000 : 100000;
-            const personalUnit = 200000;
+            const motelUnit = 50000;
+            const personalUnit = mode === 'cash' ? 200000 : 250000;
 
             if (r.girls && Array.isArray(r.girls)) {
               r.girls.forEach(g => {

@@ -122,21 +122,19 @@
             </div>
 
             <div class="divide-y divide-zinc-200 min-h-[130px] space-y-1">
-              <div v-if="invoiceModal.room._originalRef.drinkQty > 0" class="grid grid-cols-12 gap-1 items-center pt-1">
+              <div v-for="(drink, drinkIdx) in getDrinkItems(invoiceModal.room._originalRef)" :key="'invoice_drink_'+drinkIdx" class="grid grid-cols-12 gap-1 items-center pt-1">
                 <div class="col-span-5 text-left pl-1 font-semibold text-zinc-900 truncate">
-                  {{ invoiceModal.room._originalRef.drinkType === '소맥' ? '소맥' : '양주 ' + invoiceModal.room._originalRef.drinkType }}
-                  <span v-if="invoiceModal.room._originalRef.serviceQty > 0" class="text-[10px] text-rose-600 block">
-                    (서비스 {{ invoiceModal.room._originalRef.serviceQty }}병 차감)
-                  </span>
+                  {{ drink.type === '소맥' ? '소맥' : (drink.type === '특수' ? '특수 양주' : '양주 ' + drink.type) }}
+                  <span v-if="Number(drink.serviceQty) > 0" class="text-[10px] text-rose-600 block">(서비스 {{ drink.serviceQty }}병 차감)</span>
                 </div>
                 <div class="col-span-3 text-right font-mono text-zinc-600">
-                  {{ (invoiceModal.mode === 'cash' ? getDrinkCashUnitPrice(invoiceModal.room._originalRef.drinkType) : getDrinkCardUnitPrice(invoiceModal.room._originalRef.drinkType)).toLocaleString() }}
+                  {{ (invoiceModal.mode === 'cash' ? getDrinkCashUnitPrice(drink.type, getSpecialDrinkPrice(drink), drink) : getDrinkCardUnitPrice(drink.type, getSpecialDrinkPrice(drink), drink)).toLocaleString() }}
                 </div>
                 <div class="col-span-1 text-center font-bold text-zinc-900">
-                  {{ Math.max(0, invoiceModal.room._originalRef.drinkQty - (invoiceModal.room._originalRef.serviceQty || 0)) }}
+                  {{ drink.type === '소맥' ? '-' : Math.max(0, (Number(drink.qty) || 0) - (Number(drink.serviceQty) || 0)) }}
                 </div>
                 <div class="col-span-3 text-right font-mono font-bold text-zinc-950 pr-1">
-                  {{ getDrinkTotalPrice(invoiceModal.room._originalRef, invoiceModal.mode).toLocaleString() }}
+                  {{ getDrinkItemTotalPrice(drink, invoiceModal.mode).toLocaleString() }}
                 </div>
               </div>
 
@@ -157,33 +155,31 @@
                 </div>
               </template>
 
-              <!-- 손님 계산서: 가게 계산(M○) 모텔비만 합산 -->
-              <template v-for="(mg, mgIdx) in invoiceModalStoreMotelItems" :key="'inv_mg_'+mgIdx">
-                <div class="grid grid-cols-12 gap-1 items-center pt-1">
-                  <div class="col-span-5 text-left pl-1 font-semibold text-zinc-900 truncate">
-                    모텔비 ({{ mg.name || '접대원' }})
-                  </div>
-                  <div class="col-span-3 text-right font-mono text-zinc-600">
-                    {{ (invoiceModal.mode === 'cash' ? 50000 : 100000).toLocaleString() }}
-                  </div>
-                  <div class="col-span-1 text-center font-bold text-zinc-900">1</div>
-                  <div class="col-span-3 text-right font-mono font-bold text-zinc-950 pr-1">
-                    {{ (invoiceModal.mode === 'cash' ? 50000 : 100000).toLocaleString() }}
-                  </div>
+              <!-- 손님 계산서: 가게 계산(M○) 모텔비 동일 항목 합산 -->
+              <div v-if="invoiceModalStoreMotelItems.count > 0" class="grid grid-cols-12 gap-1 items-center pt-1">
+                <div class="col-span-5 text-left pl-1 font-semibold text-zinc-900 truncate">
+                  모텔비
                 </div>
-              </template>
+                <div class="col-span-3 text-right font-mono text-zinc-600">
+                  {{ (invoiceModal.mode === 'cash' ? 50000 : 100000).toLocaleString() }}
+                </div>
+                <div class="col-span-1 text-center font-bold text-zinc-900">{{ invoiceModalStoreMotelItems.count }}</div>
+                <div class="col-span-3 text-right font-mono font-bold text-zinc-950 pr-1">
+                  {{ (invoiceModalStoreMotelItems.count * (invoiceModal.mode === 'cash' ? 50000 : 100000)).toLocaleString() }}
+                </div>
+              </div>
 
-              <!-- 손님 계산서: 가게 계산(P○) 개인비만 합산 -->
-              <template v-for="(pg, pgIdx) in invoiceModalStorePersonalItems" :key="'inv_pg_'+pgIdx">
-                <div class="grid grid-cols-12 gap-1 items-center pt-1">
-                  <div class="col-span-5 text-left pl-1 font-semibold text-zinc-900 truncate">
-                    개인비 ({{ pg.name || '접대원' }})
-                  </div>
-                  <div class="col-span-3 text-right font-mono text-zinc-600">200,000</div>
-                  <div class="col-span-1 text-center font-bold text-zinc-900">1</div>
-                  <div class="col-span-3 text-right font-mono font-bold text-zinc-950 pr-1">200,000</div>
+              <!-- 손님 계산서: 가게 계산(P○) 개인비 동일 항목 합산 -->
+              <div v-if="invoiceModalStorePersonalItems.count > 0" class="grid grid-cols-12 gap-1 items-center pt-1">
+                <div class="col-span-5 text-left pl-1 font-semibold text-zinc-900 truncate">
+                  개인비
                 </div>
-              </template>
+                <div class="col-span-3 text-right font-mono text-zinc-600">200,000</div>
+                <div class="col-span-1 text-center font-bold text-zinc-900">{{ invoiceModalStorePersonalItems.count }}</div>
+                <div class="col-span-3 text-right font-mono font-bold text-zinc-950 pr-1">
+                  {{ (invoiceModalStorePersonalItems.count * 200000).toLocaleString() }}
+                </div>
+              </div>
 
               <div v-if="invoiceModal.room._originalRef.rtChecked" class="grid grid-cols-12 gap-1 items-center pt-1">
                 <div class="col-span-5 text-left pl-1 font-semibold text-zinc-900">RT</div>
@@ -193,14 +189,14 @@
               </div>
 
               <template v-for="(ex, exIdx) in (invoiceModal.room._originalRef.extras || [])" :key="'inv_ex_'+exIdx">
-                <div v-if="ex.amount > 0" class="grid grid-cols-12 gap-1 items-center pt-1">
+                <div v-if="getExtraAmount(ex) > 0" class="grid grid-cols-12 gap-1 items-center pt-1">
                   <div class="col-span-5 text-left pl-1 font-semibold text-zinc-900 truncate">
                     {{ ex.type || '추가' }}
                   </div>
                   <div class="col-span-3 text-right font-mono text-zinc-600">-</div>
                   <div class="col-span-1 text-center font-bold text-zinc-900">1</div>
                   <div class="col-span-3 text-right font-mono font-bold text-zinc-950 pr-1">
-                    {{ Number(ex.amount).toLocaleString() }}
+                    {{ getExtraAmount(ex).toLocaleString() }}
                   </div>
                 </div>
               </template>
@@ -277,17 +273,21 @@
     <!-- 📒 수기장부 이미지 크게 보기 모달 -->
     <div v-if="isHandwrittenModalOpen" @click.self="closeHandwrittenModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div class="bg-white dark:bg-darkCard border border-zinc-200 dark:border-darkBorder p-4 sm:p-5 rounded-2xl shadow-2xl max-w-2xl w-full space-y-4">
-        <div class="flex justify-between items-center border-b border-zinc-200 dark:border-darkBorder pb-2.5">
-          <div class="flex items-center gap-2">
-            <span class="font-bold text-sm sm:text-base text-accent">📒 수기장부 이미지</span>
-            <span class="text-xs bg-zinc-200 dark:bg-zinc-800 px-2 py-0.5 rounded font-mono text-zinc-500 dark:text-zinc-300">{{ selectedDate }}</span>
+        <div class="flex justify-between items-center border-b border-zinc-200 dark:border-darkBorder pb-2.5 gap-2">
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="font-bold text-sm sm:text-base text-accent shrink-0">📒 수기장부</span>
+            <div class="flex items-center gap-1.5">
+              <button type="button" @click="changeHandwrittenDate(-1)" class="w-8 h-8 rounded-lg bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 font-bold text-lg" title="하루 전">‹</button>
+              <span class="text-base sm:text-xl font-extrabold bg-zinc-200 dark:bg-zinc-800 px-2.5 py-1 rounded font-mono text-zinc-800 dark:text-zinc-100 whitespace-nowrap">{{ selectedDate }}</span>
+              <button type="button" @click="changeHandwrittenDate(1)" class="w-8 h-8 rounded-lg bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 font-bold text-lg" title="하루 다음">›</button>
+            </div>
           </div>
-          <button @click="closeHandwrittenModal" class="text-zinc-400 hover:text-zinc-100 text-lg font-bold px-2">✕</button>
+          <button @click="closeHandwrittenModal" class="text-zinc-400 hover:text-zinc-100 text-lg font-bold px-2 shrink-0">✕</button>
         </div>
 
         <div class="flex justify-center items-center bg-zinc-100 dark:bg-[#161616] rounded-xl overflow-hidden min-h-[280px] max-h-[70vh]">
           <img v-if="currentDayData.handwrittenPhotoUrl" :src="currentDayData.handwrittenPhotoUrl" alt="수기장부 확대 이미지" class="max-w-full max-h-[70vh] object-contain">
-          <div v-else class="text-xs text-zinc-500 py-16">등록된 수기장부 이미지가 없습니다.</div>
+          <div v-else class="text-sm sm:text-base font-semibold text-zinc-500 py-16">{{ selectedDate }} · 이미지 없음</div>
         </div>
 
         <div class="flex justify-between items-center gap-2 pt-1">
@@ -516,11 +516,27 @@
                    selectedDate === day.dateStr ? 'bg-accent/10 border-accent shadow-sm' : 'border-transparent bg-zinc-50/50 dark:bg-[#202020]'
                  ]">
               <span class="text-[9px] font-mono text-zinc-400">{{ day.dayNum }}</span>
-              <span v-if="day.isCurrentMonth && dailyRoomCountMap[day.dateStr]" 
-                    class="text-right font-mono font-bold text-[10px] sm:text-[11px] text-accent pr-0.5">
-                {{ dailyRoomCountMap[day.dateStr] }}
-              </span>
+              <div v-if="day.isCurrentMonth && ((day.attendanceNames && day.attendanceNames.length) || dailyRoomCountMap[day.dateStr])" class="flex items-center justify-between gap-0.5 min-w-0">
+                <span v-if="day.attendanceNames && day.attendanceNames.length" class="flex items-center gap-0.5 min-w-0 truncate text-[8px] sm:text-[9px] font-bold">
+                  <template v-for="(person, personIdx) in day.attendanceNames" :key="personIdx">
+                    <span v-if="personIdx > 0" class="text-zinc-400">·</span>
+                    <span :class="person === '학명' ? 'text-purple-600 dark:text-purple-400' : 'text-orange-600 dark:text-orange-400'">{{ person }}</span>
+                  </template>
+                </span>
+                <span v-if="dailyRoomCountMap[day.dateStr]" class="text-right font-mono font-bold text-[10px] sm:text-[11px] text-accent pr-0.5 shrink-0">{{ dailyRoomCountMap[day.dateStr] }}</span>
+              </div>
             </div>
+          </div>
+          <div class="flex flex-wrap items-center gap-x-4 gap-y-2 pt-2 border-t border-zinc-200 dark:border-darkBorder">
+            <span class="text-[10px] font-bold text-zinc-500">{{ selectedDate }} 출근</span>
+            <label class="flex items-center gap-1.5 text-xs font-semibold text-purple-600 dark:text-purple-400 cursor-pointer select-none">
+              <input type="checkbox" v-model="currentDayData.attendance.hakmyeong" @change="saveData" class="w-3.5 h-3.5 accent-purple-600">
+              학명
+            </label>
+            <label class="flex items-center gap-1.5 text-xs font-semibold text-orange-600 dark:text-orange-400 cursor-pointer select-none">
+              <input type="checkbox" v-model="currentDayData.attendance.kyungmin" @change="saveData" class="w-3.5 h-3.5 accent-orange-500">
+              경민
+            </label>
           </div>
         </div>
 
@@ -688,33 +704,41 @@
                   </label>
                 </div>
 
-                <!-- 술 / 수량 (위쪽 배치) -->
-                <div>
-                  <div class="flex justify-between items-center mb-0.5">
-                    <label class="block text-[10px] text-zinc-400">술 / 수량</label>
-                    <span v-if="roomWrap._originalRef.serviceQty > 0" class="text-[10px] text-rose-400 font-bold">
-                      🎁 서비스 {{ roomWrap._originalRef.serviceQty }}병 차감
-                    </span>
+                <!-- 술 종류별 복수 입력 -->
+                <div class="rounded border border-zinc-200 dark:border-darkBorder bg-zinc-50 dark:bg-[#1a1a1a] p-2">
+                  <div class="flex justify-between items-center mb-1.5">
+                    <label class="block text-[10px] text-zinc-400">술 종류 / 금액 / 수량</label>
+                    <button @click="addDrinkItem(roomWrap._originalRef)" class="text-[10px] bg-accent/15 text-accent px-2 py-1 rounded font-bold">+ 술 추가</button>
                   </div>
-                  <div class="flex gap-1">
-                    <select v-model="roomWrap._originalRef.drinkType" @change="saveData" class="w-[45%] min-w-0 p-1.5 rounded bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-darkBorder text-zinc-100 outline-none text-xs">
-                      <option value="">술 선택</option>
-                      <option value="12년">12년</option>
-                      <option value="17년">17년</option>
-                      <option value="소맥">소맥</option>
-                    </select>
-                    <select v-model.number="roomWrap._originalRef.drinkQty" @change="saveData" class="w-[28%] min-w-0 p-1.5 rounded bg-zinc-50 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-darkBorder text-accent font-bold outline-none text-xs text-center">
-                      <option v-for="n in 12" :key="n" :value="n">{{ n }}병</option>
-                    </select>
-                    <select v-model.number="roomWrap._originalRef.serviceQty" @change="saveData" class="w-[27%] min-w-0 p-1.5 rounded bg-zinc-50 dark:bg-[#1a1a1a] border border-rose-500/50 text-rose-400 font-bold outline-none text-[11px] text-center" title="서비스 술 수량 (금액 차감)">
-                      <option :value="0">S: 0</option>
-                      <option :value="1">S: 1병</option>
-                      <option :value="2">S: 2병</option>
-                      <option :value="3">S: 3병</option>
-                    </select>
+                  <div v-for="(drink, drinkIdx) in getDrinkItems(roomWrap._originalRef)" :key="'drink_'+drinkIdx" class="border-b border-zinc-200 dark:border-darkBorder last:border-0 py-1.5 space-y-1">
+                    <div class="flex gap-1 items-center">
+                      <select v-model="drink.type" @change="onDrinkTypeChange(drink)" class="flex-1 min-w-0 p-1.5 rounded bg-white dark:bg-[#222] border border-zinc-300 dark:border-darkBorder text-zinc-800 dark:text-zinc-100 outline-none text-xs">
+                        <option value="">술 선택</option><option value="12년">12년</option><option value="17년">17년</option><option value="소맥">소맥</option><option value="특수">특수</option>
+                      </select>
+                      <select v-if="drink.type === '소맥'" v-model.number="drink.somaekPrice" @change="saveData" class="flex-1 min-w-0 p-1.5 rounded bg-white dark:bg-[#222] border border-accent/50 text-accent font-bold outline-none text-xs text-center">
+                        <option :value="0">소맥 금액 선택</option><option v-for="n in 16" :key="'sm'+n" :value="n * 50000">{{ (n * 5).toLocaleString() }}만원</option>
+                      </select>
+                      <template v-else>
+                        <select v-model.number="drink.qty" @change="saveData" class="w-[25%] min-w-0 p-1.5 rounded bg-white dark:bg-[#222] border border-zinc-300 dark:border-darkBorder text-accent font-bold outline-none text-xs text-center">
+                          <option v-for="n in (drink.type === '12년' || drink.type === '17년' ? 20 : 30)" :key="'dq'+n" :value="n">{{ n }}병</option>
+                        </select>
+                        <select v-model.number="drink.serviceQty" @change="saveData" class="w-[25%] min-w-0 p-1.5 rounded bg-white dark:bg-[#222] border border-rose-500/50 text-rose-400 font-bold outline-none text-[11px] text-center" title="서비스 수량">
+                          <option :value="0">S:0</option><option v-for="n in Math.min(10, Number(drink.qty)||0)" :key="'ds'+n" :value="n">S:{{ n }}</option>
+                        </select>
+                      </template>
+                      <button v-if="getDrinkItems(roomWrap._originalRef).length > 1" @click="removeDrinkItem(roomWrap._originalRef, drinkIdx)" class="text-rose-500 font-bold px-1" title="술 항목 삭제">×</button>
+                    </div>
+                    <div v-if="drink.type === '특수'" class="flex gap-1">
+                      <select v-model.number="drink.specialPrice" @change="saveData" class="flex-1 min-w-0 p-1.5 rounded bg-white dark:bg-[#222] border border-customOrange/50 text-customOrange font-bold outline-none text-xs">
+                        <option :value="0">특수 금액 선택</option><option v-for="n in 16" :key="'sp'+n" :value="n * 50000">{{ (n * 5).toLocaleString() }}만원</option><option :value="-1">직접 입력</option>
+                      </select>
+                      <div v-if="Number(drink.specialPrice) === -1" class="w-[42%] flex items-center gap-1">
+                        <input type="number" min="0" step="1" v-model.number="drink.specialCustomPriceMan" @input="saveData" placeholder="만원 단위" class="w-full min-w-0 p-1.5 rounded bg-white dark:bg-[#222] border border-customOrange/50 text-customOrange font-bold outline-none text-xs text-right">
+                        <span class="text-[10px] text-customOrange">만원</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-
                 <!-- 동적 추가 항목 영역 (아래쪽 배치) -->
                 <div class="flex flex-col gap-1.5 bg-zinc-50 dark:bg-[#1a1a1a] p-2 rounded border border-zinc-200 dark:border-darkBorder">
                   <div class="flex justify-between items-center mb-1">
@@ -732,9 +756,14 @@
                       </select>
 
                       <select v-model.number="ex.amount" @change="saveData" class="flex-1 p-1 rounded bg-white dark:bg-[#222] border border-zinc-300 dark:border-darkBorder text-accent font-bold text-[11px] outline-none text-center">
-                        <option :value="0">0원</option>
+                        <option :value="0">금액 선택</option>
                         <option v-for="n in 30" :key="n" :value="n * 10000">{{ n }}만</option>
+                        <option :value="-1">직접 입력</option>
                       </select>
+                      <div v-if="Number(ex.amount) === -1" class="w-[32%] flex items-center gap-1">
+                        <input type="number" min="0" step="1" v-model.number="ex.customAmountMan" @input="saveData" placeholder="만원" class="w-full min-w-0 p-1 rounded bg-white dark:bg-[#222] border border-customOrange/50 text-customOrange font-bold text-[11px] text-right outline-none">
+                        <span class="text-[9px] text-customOrange">만원</span>
+                      </div>
 
                       <button @click="removeExtraItem(roomWrap._originalRef, exIdx)" class="text-rose-500 font-bold px-1.5 py-1 text-xs hover:bg-rose-500/10 rounded">×</button>
                     </div>
@@ -756,10 +785,12 @@
 
                   <div class="space-y-1.5 pr-0">
                     <div v-for="(g, gIdx) in roomWrap._originalRef.girls" :key="gIdx"
-                         :class="(g.motelState === 'customer' || g.personalState === 'customer') ? 'bg-amber-500/10 border border-amber-500/40 rounded-md p-1' : 'p-0.5'"
-                         class="flex flex-col gap-1 transition">
+                         class="p-0.5 flex flex-col gap-1 transition">
                       
                       <div class="flex gap-1 items-center min-w-0">
+                        <label class="flex items-center justify-center gap-0.5 text-[10px] text-customOrange font-bold shrink-0 w-7 cursor-pointer" title="초 체크 시 사무실 지급 TC 시간당 4만원">
+                          <input type="checkbox" v-model="g.isChomisi" @change="saveData" class="w-3 h-3 accent-customOrange">초
+                        </label>
                         <!-- M 버튼 -->
                         <button type="button" @click="cycleGirlMotel(g)" :class="getMotelBtnClass(g.motelState)" class="px-1.5 py-1 text-[11px] font-extrabold rounded shrink-0 transition" :title="getMotelTitle(g.motelState)">
                           {{ getMotelLabel(g.motelState) }}
@@ -798,6 +829,7 @@
                           <option value="4H">4H</option>
                           <option value="5H">5H</option>
                           <option value="6H">6H</option>
+                          <option value="외부1H">외부 1H</option><option value="외부2H">외부 2H</option><option value="외부3H">외부 3H</option><option value="외부4H">외부 4H</option><option value="외부5H">외부 5H</option><option value="외부6H">외부 6H</option>
                         </select>
 
                         <select v-model="g.tc2" @change="saveData" class="w-[15%] min-w-0 px-0.5 py-1 text-[11px] rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-darkBorder text-accent font-mono font-bold outline-none text-center">
@@ -813,6 +845,7 @@
                           <option value="4H">4H</option>
                           <option value="5H">5H</option>
                           <option value="6H">6H</option>
+                          <option value="외부1H">외부 1H</option><option value="외부2H">외부 2H</option><option value="외부3H">외부 3H</option><option value="외부4H">외부 4H</option><option value="외부5H">외부 5H</option><option value="외부6H">외부 6H</option>
                         </select>
 
                         <span class="w-[15%] min-w-0 text-[11px] font-bold text-customOrange text-center truncate" :title="'시간비 합계: ' + formatKoreanFee(calculateGirlFee(g))">
@@ -821,7 +854,6 @@
 
                         <button @click="removeGirl(roomWrap._originalRef, gIdx)" class="w-[6%] text-rose-500 font-bold py-1 text-xs shrink-0 text-center hover:bg-rose-500/10 rounded">×</button>
                       </div>
-
                     </div>
 
                     <div v-if="!roomWrap._originalRef.girls || roomWrap._originalRef.girls.length === 0" class="text-[10px] text-zinc-500 text-center py-4">
@@ -1020,7 +1052,7 @@
                   <button type="button" @click="girlFilterStyle = '아가씨'" :class="girlFilterStyle === '아가씨' ? 'bg-customOrange text-zinc-950 font-bold shadow-sm' : 'text-zinc-400 hover:text-zinc-200'" class="px-2 py-0.5 rounded text-[11px] transition">아가씨</button>
                   <button type="button" @click="girlFilterStyle = '아젊'" :class="girlFilterStyle === '아젊' ? 'bg-customOrange text-zinc-950 font-bold shadow-sm' : 'text-zinc-400 hover:text-zinc-200'" class="px-2 py-0.5 rounded text-[11px] transition">아젊</button>
                   <button type="button" @click="girlFilterStyle = '젊초'" :class="girlFilterStyle === '젊초' ? 'bg-customOrange text-zinc-950 font-bold shadow-sm' : 'text-zinc-400 hover:text-zinc-200'" class="px-2 py-0.5 rounded text-[11px] transition">젊초</button>
-                  <button type="button" @click="girlFilterStyle = '초미시'" :class="girlFilterStyle === '초미시' ? 'bg-customOrange text-zinc-950 font-bold shadow-sm' : 'text-zinc-400 hover:text-zinc-200'" class="px-2 py-0.5 rounded text-[11px] transition">초미시</button>
+                  <button type="button" @click="girlFilterStyle = '초'" :class="girlFilterStyle === '초' ? 'bg-customOrange text-zinc-950 font-bold shadow-sm' : 'text-zinc-400 hover:text-zinc-200'" class="px-2 py-0.5 rounded text-[11px] transition">초</button>
                 </div>
               </div>
 
@@ -1176,7 +1208,7 @@
       const SUPABASE_URL = 'https://ickxgwkvkcgrehufmwut.supabase.co';
       const SUPABASE_KEY = 'sb_publishable_GLv8OIRpMqaI80yBdGng_w_Bh6Wxgqr';
       const STORAGE_BUCKET = 'profile-images';
-      const { createApp, ref, computed, onMounted } = Vue;
+      const { createApp, ref, computed, onMounted, onBeforeUnmount } = Vue;
 
       createApp({
         setup() {
@@ -1415,6 +1447,36 @@
             isHandwrittenModalOpen.value = false;
           };
 
+          // 수기장부 확대 화면 날짜 이동: 하루 단위로 이동하며 이미지가 없는 날짜도 표시
+          const changeHandwrittenDate = (offset) => {
+            const [year, month, day] = selectedDate.value.split('-').map(Number);
+            const target = new Date(year, month - 1, day);
+            target.setDate(target.getDate() + offset);
+            const y = target.getFullYear();
+            const m = String(target.getMonth() + 1).padStart(2, '0');
+            const d = String(target.getDate()).padStart(2, '0');
+            const nextDate = `${y}-${m}-${d}`;
+            selectedDate.value = nextDate;
+            calendarYear.value = y;
+            calendarMonth.value = target.getMonth();
+            initDateData(nextDate);
+            saveData();
+          };
+
+          const handleHandwrittenModalKeydown = (event) => {
+            if (!isHandwrittenModalOpen.value || event.altKey || event.ctrlKey || event.metaKey) return;
+            const target = event.target;
+            const tag = target && target.tagName ? target.tagName.toLowerCase() : '';
+            if (['input', 'textarea', 'select'].includes(tag) || (target && target.isContentEditable)) return;
+            if (event.key === 'ArrowLeft') {
+              event.preventDefault();
+              changeHandwrittenDate(-1);
+            } else if (event.key === 'ArrowRight') {
+              event.preventDefault();
+              changeHandwrittenDate(1);
+            }
+          };
+
           const handleHandwrittenPhotoUpload = async (event) => {
             const file = event.target.files && event.target.files[0];
             if (!file) return;
@@ -1563,6 +1625,7 @@
               let parts = [];
               if (g.tc) parts.push(g.tc);
               if (g.tc2) parts.push(g.tc2);
+              if (getExternalHours(g) > 0) parts.push(`외부${getExternalHours(g)}H`);
               const timeLabel = parts.join('');
               const key = `${timeLabel}_${fee}`;
 
@@ -1583,15 +1646,15 @@
           });
 
           const invoiceModalStoreMotelItems = computed(() => {
-            if (!invoiceModal.value.isOpen || !invoiceModal.value.room) return [];
+            if (!invoiceModal.value.isOpen || !invoiceModal.value.room) return { count: 0 };
             const girls = invoiceModal.value.room._originalRef.girls || [];
-            return girls.filter(g => g.motelState === 'store');
+            return { count: girls.filter(g => g.motelState === 'store').length };
           });
 
           const invoiceModalStorePersonalItems = computed(() => {
-            if (!invoiceModal.value.isOpen || !invoiceModal.value.room) return [];
+            if (!invoiceModal.value.isOpen || !invoiceModal.value.room) return { count: 0 };
             const girls = invoiceModal.value.room._originalRef.girls || [];
-            return girls.filter(g => g.personalState === 'store');
+            return { count: girls.filter(g => g.personalState === 'store').length };
           });
 
           const invoiceModalDirectItems = computed(() => {
@@ -1900,9 +1963,14 @@
           };
 
           onMounted(() => {
+            window.addEventListener('keydown', handleHandwrittenModalKeydown);
             if (isLoggedIn.value) {
               fetchCloudData();
             }
+          });
+
+          onBeforeUnmount(() => {
+            window.removeEventListener('keydown', handleHandwrittenModalKeydown);
           });
 
           const getCustomDateStr = (targetDate = new Date()) => {
@@ -1929,10 +1997,14 @@
               db.value[dStr] = {
                 rooms: [],
                 mCash: 0, mCard: 0, mCredit: 0, pCash: 0, pCard: 0,
-                handwrittenPhotoUrl: ''
+                handwrittenPhotoUrl: '',
+                attendance: { hakmyeong: false, kyungmin: false }
               };
-            } else if (db.value[dStr].handwrittenPhotoUrl === undefined) {
-              db.value[dStr].handwrittenPhotoUrl = '';
+            } else {
+              if (db.value[dStr].handwrittenPhotoUrl === undefined) db.value[dStr].handwrittenPhotoUrl = '';
+              if (!db.value[dStr].attendance) db.value[dStr].attendance = { hakmyeong: false, kyungmin: false };
+              if (db.value[dStr].attendance.hakmyeong === undefined) db.value[dStr].attendance.hakmyeong = false;
+              if (db.value[dStr].attendance.kyungmin === undefined) db.value[dStr].attendance.kyungmin = false;
             }
           };
 
@@ -1973,49 +2045,138 @@
             return sum;
           });
 
+          const getExternalHours = (g) => {
+            if (!g || !g.externalTc) return 0;
+            if (g.externalTc === 'custom') return Math.max(0, Number(g.externalHours) || 0);
+            return Math.max(0, Number(g.externalTc) || 0);
+          };
+
+          // 손님 결제 TC: 일반/초미시 모두 시간당 5만원, 외부 TC도 별도 추가
           const calculateGirlFee = (g) => {
             let total = 0;
             const parseValue = (val) => {
               if (!val) return 0;
-              if (val.endsWith('H')) {
-                const hours = parseInt(val) || 0;
-                return hours * 50000;
-              } else if (val.startsWith('+')) {
-                const plus = parseInt(val) || 0;
-                return plus * 10000;
-              }
+              if (val.startsWith('외부')) return (parseInt(val.replace('외부', ''), 10) || 0) * 50000;
+              if (val.endsWith('H')) return (parseInt(val, 10) || 0) * 50000;
+              if (val.startsWith('+')) return (parseInt(val, 10) || 0) * 10000;
               return 0;
             };
             total += parseValue(g.tc);
             total += parseValue(g.tc2);
+            if (!(String(g.tc || '').startsWith('외부') || String(g.tc2 || '').startsWith('외부'))) total += getExternalHours(g) * 50000;
             return total;
           };
 
-          const getDrinkCashUnitPrice = (drinkType) => {
+          // 사무실 지급 TC: 초미시 체크 시 일반 H 시간만 시간당 4만원으로 계산
+          const calculateGirlOfficeFee = (g) => {
+            let total = 0;
+            const parseOfficeValue = (val) => {
+              if (!val) return 0;
+              if (val.startsWith('외부')) return (parseInt(val.replace('외부', ''), 10) || 0) * 50000;
+              if (val.endsWith('H')) return (parseInt(val, 10) || 0) * (g.isChomisi ? 40000 : 50000);
+              if (val.startsWith('+')) return (parseInt(val, 10) || 0) * 10000;
+              return 0;
+            };
+            total += parseOfficeValue(g.tc);
+            total += parseOfficeValue(g.tc2);
+            // 외부 TC는 별도 추가 합산하며 시간당 5만원
+            if (!(String(g.tc || '').startsWith('외부') || String(g.tc2 || '').startsWith('외부'))) total += getExternalHours(g) * 50000;
+            return total;
+          };
+
+          // 구버전 장부 호환: 기존 단일 술 데이터를 복수 술 배열로 한 번만 변환
+          const getDrinkItems = (r) => {
+            if (!r) return [];
+            if (!Array.isArray(r.drinkItems)) {
+              r.drinkItems = [];
+              const legacyQty = Number(r.drinkQty) || 0;
+              if (legacyQty > 0 && r.drinkType) {
+                r.drinkItems.push({
+                  type: r.drinkType, qty: legacyQty, serviceQty: Number(r.serviceQty) || 0,
+                  specialPrice: Number(r.specialPrice) || 0, specialCustomPrice: Number(r.specialCustomPrice) || 0, somaekPrice: Number(r.somaekPrice) || 0
+                });
+              }
+            }
+            r.drinkItems.forEach(drink => {
+              if ((drink.type === '12년' || drink.type === '17년') && Number(drink.qty) > 20) drink.qty = 20;
+            });
+            return r.drinkItems;
+          };
+
+          const getSpecialDrinkPrice = (drink) => {
+            if (!drink || drink.type !== '특수') return 0;
+            return Number(drink.specialPrice) === -1
+              ? Math.max(0, Number(drink.specialCustomPriceMan) * 10000 || Number(drink.specialCustomPrice) || 0)
+              : Math.max(0, Number(drink.specialPrice) || 0);
+          };
+
+          const getDrinkCashUnitPrice = (drinkType, specialPrice = 0, drink = null) => {
             if (drinkType === '12년') return 120000;
             if (drinkType === '17년') return 170000;
-            if (drinkType === '소맥') return 100000;
+            if (drinkType === '소맥') return Math.max(0, Number(drink && drink.somaekPrice) || 0);
+            if (drinkType === '특수') return Math.max(0, Number(specialPrice) || 0);
             return 0;
           };
 
-          const getDrinkCardUnitPrice = (drinkType) => {
+          // 술 종류별 현금/카드 구분. 소맥은 선택한 금액을 현금·카드 동일 적용
+          const getDrinkCardUnitPrice = (drinkType, specialPrice = 0, drink = null) => {
             if (drinkType === '12년') return 150000;
             if (drinkType === '17년') return 200000;
-            if (drinkType === '소맥') return 130000;
+            if (drinkType === '소맥') return Math.max(0, Number(drink && drink.somaekPrice) || 0);
+            if (drinkType === '특수') return Math.max(0, Number(specialPrice) || 0);
             return 0;
           };
 
-          const getDrinkTotalPrice = (r, mode) => {
-            const qty = Number(r.drinkQty) || 0;
-            const serviceQty = Number(r.serviceQty) || 0;
-            const unitPrice = mode === 'cash' ? getDrinkCashUnitPrice(r.drinkType) : getDrinkCardUnitPrice(r.drinkType);
-            const payableQty = Math.max(0, qty - serviceQty);
+          const getDrinkItemTotalPrice = (drink, mode) => {
+            if (!drink || !drink.type) return 0;
+            // 소맥은 수량/기본 단가를 적용하지 않고, 선택된 금액만 1회 합산한다.
+            if (drink.type === '소맥') return Math.max(0, Number(drink.somaekPrice) || 0);
+            const unitPrice = mode === 'cash'
+              ? getDrinkCashUnitPrice(drink.type, getSpecialDrinkPrice(drink), drink)
+              : getDrinkCardUnitPrice(drink.type, getSpecialDrinkPrice(drink), drink);
+            const payableQty = Math.max(0, (Number(drink.qty) || 0) - (Number(drink.serviceQty) || 0));
             return unitPrice * payableQty;
+          };
+
+          const getDrinkTotalPrice = (r, mode) => getDrinkItems(r).reduce((sum, drink) => sum + getDrinkItemTotalPrice(drink, mode), 0);
+
+          const addDrinkItem = (roomObj) => {
+            const items = getDrinkItems(roomObj);
+            items.push({ type: '12년', qty: 1, serviceQty: 0, specialPrice: 0, specialCustomPrice: 0, somaekPrice: 0 });
+            saveData();
+          };
+
+          const onDrinkTypeChange = (drink) => {
+            if ((drink.type === '12년' || drink.type === '17년') && Number(drink.qty) > 20) drink.qty = 20;
+            if (drink.type === '소맥') {
+              // 소맥은 종류를 선택한 것만으로 기본 금액이 붙지 않도록 초기화한다.
+              // 실제 금액은 아래 금액 드롭다운에서 선택한 값만 계산한다.
+              drink.somaekPrice = 0;
+              drink.serviceQty = 0;
+            }
+            saveData();
+          };
+
+          const removeDrinkItem = (roomObj, drinkIdx) => {
+            const items = getDrinkItems(roomObj);
+            if (items.length <= 1) {
+              items.splice(0, 1, { type: '', qty: 1, serviceQty: 0, specialPrice: 0, specialCustomPrice: 0, somaekPrice: 0 });
+            } else {
+              items.splice(drinkIdx, 1);
+            }
+            saveData();
+          };
+
+          const getExtraAmount = (ex) => {
+            if (!ex) return 0;
+            return Number(ex.amount) === -1
+              ? Math.max(0, Number(ex.customAmountMan) * 10000 || 0)
+              : Math.max(0, Number(ex.amount) || 0);
           };
 
           const addExtraItem = (roomObj) => {
             if (!roomObj.extras) roomObj.extras = [];
-            roomObj.extras.push({ type: '현금', amount: 0 });
+            roomObj.extras.push({ type: '현금', amount: 0, customAmountMan: 0 });
             saveData();
           };
 
@@ -2106,7 +2267,7 @@
 
             if (r.extras && Array.isArray(r.extras)) {
               r.extras.forEach(ex => {
-                extra += Number(ex.amount) || 0;
+                extra += getExtraAmount(ex);
               });
             } else if (r.extraType && Number(r.extraAmount) > 0) {
               extra += Number(r.extraAmount);
@@ -2114,31 +2275,9 @@
             return extra;
           };
 
-          const calculateRoomTotalCash = (r) => {
-            const qty = Number(r.drinkQty) || 0;
-            const serviceQty = Number(r.serviceQty) || 0;
-            
-            let drinkPrice = 0;
-            if (r.drinkType === '12년') drinkPrice = 120000;
-            else if (r.drinkType === '17년') drinkPrice = 170000;
-            else if (r.drinkType === '소맥') drinkPrice = 100000;
+          const calculateRoomTotalCash = (r) => getDrinkTotalPrice(r, 'cash') + getCommonExtraFee(r, 'cash');
 
-            const payableQty = Math.max(0, qty - serviceQty);
-            return (drinkPrice * payableQty) + getCommonExtraFee(r, 'cash');
-          };
-
-          const calculateRoomTotalCard = (r) => {
-            const qty = Number(r.drinkQty) || 0;
-            const serviceQty = Number(r.serviceQty) || 0;
-
-            let drinkPrice = 0;
-            if (r.drinkType === '12년') drinkPrice = 150000;
-            else if (r.drinkType === '17년') drinkPrice = 200000;
-            else if (r.drinkType === '소맥') drinkPrice = 130000;
-
-            const payableQty = Math.max(0, qty - serviceQty);
-            return (drinkPrice * payableQty) + getCommonExtraFee(r, 'card');
-          };
+          const calculateRoomTotalCard = (r) => getDrinkTotalPrice(r, 'card') + getCommonExtraFee(r, 'card');
 
           // 당일 사무실별 TC · 가게 계산 개인비(P○) 합산 집계
           const officeDailySummaryList = computed(() => {
@@ -2148,7 +2287,7 @@
             rooms.forEach(r => {
               if (!r.girls || !Array.isArray(r.girls)) return;
               r.girls.forEach(g => {
-                const tcFee = calculateGirlFee(g);
+                const tcFee = calculateGirlOfficeFee(g);
                 const personalFee = g.personalState === 'store' ? 200000 : 0;
                 const itemSum = tcFee + personalFee;
                 if (itemSum <= 0) return;
@@ -2304,7 +2443,7 @@
           const addRoomCard = () => {
             currentDayData.value.rooms.push({
               _id: Date.now() + Math.random(),
-              no: "1T", customer: "", rtChecked: true, isCredit: false, isPaid: false, extras: [], drinkType: "12년", drinkQty: 1, serviceQty: 0, price: 0, payMethod: "현금", price2: 0, payMethod2: "카드", note: "", girls: []
+              no: "1T", customer: "", rtChecked: true, isCredit: false, isPaid: false, extras: [], drinkType: "12년", drinkQty: 1, serviceQty: 0, specialPrice: 0, specialCustomPrice: 0, drinkItems: [{ type: "12년", qty: 1, serviceQty: 0, specialPrice: 0, specialCustomPrice: 0, somaekPrice: 0 }], price: 0, payMethod: "현금", price2: 0, payMethod2: "카드", note: "", girls: []
             });
             saveData();
           };
@@ -2321,7 +2460,7 @@
 
           const addGirl = (roomObj) => {
             if (!roomObj.girls) roomObj.girls = [];
-            roomObj.girls.push({ name: "", office: "사무실", tc: "1H", tc2: "", motelState: "", personalState: "" });
+            roomObj.girls.push({ name: "", office: "사무실", tc: "1H", tc2: "", isChomisi: false, externalTc: "", externalHours: 1, motelState: "", personalState: "" });
             saveData();
           };
 
@@ -2359,7 +2498,7 @@
 
                   const match = !q || (
                     (r.customer && r.customer.toLowerCase().includes(q)) ||
-                    (r.drinkType && r.drinkType.toLowerCase().includes(q)) ||
+                    (getDrinkItems(r).some(d => d.type && d.type.toLowerCase().includes(q))) ||
                     (r.no && r.no.toLowerCase().includes(q)) ||
                     (r.note && r.note.toLowerCase().includes(q)) ||
                     (r.girls && r.girls.some(g => (g.name && g.name.toLowerCase().includes(q)) || (g.office && g.office.toLowerCase().includes(q))))
@@ -2514,7 +2653,7 @@
           const todayTotalDrinks = computed(() => {
             let total = 0;
             currentDayData.value.rooms.forEach(r => {
-              total += Number(r.drinkQty) || 0;
+              total += getDrinkItems(r).reduce((sum, d) => sum + (Number(d.qty) || 0), 0);
             });
             return total;
           });
@@ -2528,7 +2667,7 @@
                 const dayObj = db.value[dateKey];
                 if (dayObj && dayObj.rooms) {
                   dayObj.rooms.forEach(r => {
-                    monthTotal += Number(r.drinkQty) || 0;
+                    monthTotal += getDrinkItems(r).reduce((sum, d) => sum + (Number(d.qty) || 0), 0);
                   });
                 }
               }
@@ -2557,7 +2696,10 @@
             for (let i = firstDay - 1; i >= 0; i--) days.push({ dayNum: prevLastDate - i, isCurrentMonth: false, dateStr: '' });
             for (let i = 1; i <= lastDate; i++) {
               const mStr = String(month + 1).padStart(2, '0'), dStr = String(i).padStart(2, '0');
-              days.push({ dayNum: i, isCurrentMonth: true, dateStr: `${year}-${mStr}-${dStr}` });
+              const dateStr = `${year}-${mStr}-${dStr}`;
+              const attendance = (db.value[dateStr] && db.value[dateStr].attendance) || {};
+              const attendanceNames = [attendance.hakmyeong ? '학명' : '', attendance.kyungmin ? '경민' : ''].filter(Boolean);
+              days.push({ dayNum: i, isCurrentMonth: true, dateStr, attendanceNames });
             }
             const rem = (7 - (days.length % 7)) % 7;
             for (let i = 1; i <= rem; i++) days.push({ dayNum: i, isCurrentMonth: false, dateStr: '' });
@@ -2593,14 +2735,14 @@
             todayTotalDrinks, monthTotalDrinks, calendarYear, calendarMonth, calendarDays, dailyRoomCountMap, prevMonth, nextMonth, selectDateFromCalendar, exportJSON, resizeTextarea, calculateGirlFee, calculateRoomTotalCash, calculateRoomTotalCard, formatKoreanFee, formatKoreanWonFull,
             totalAutoCash, totalAutoCard,
             isLoggedIn, authError, authForm, handleLogin, handleLogout,
-            roomQuickNavList, jumpToRoom, scrollToTop, scrollToLastRoom, syncStatus, addExtraItem, removeExtraItem,
+            roomQuickNavList, jumpToRoom, scrollToTop, scrollToLastRoom, syncStatus, addExtraItem, removeExtraItem, getExtraAmount,
             previewGirl, openPhotoModal, closePhotoModal, handlePhotoUpload, removeGirlPhoto,
-            isHandwrittenModalOpen, isHandwrittenUploading, handwrittenUploadStage, handwrittenUploadProgress, handwrittenUploadError, openHandwrittenModal, closeHandwrittenModal, handleHandwrittenPhotoUpload, handleHandwrittenDrop, removeHandwrittenPhoto,
+            isHandwrittenModalOpen, isHandwrittenUploading, handwrittenUploadStage, handwrittenUploadProgress, handwrittenUploadError, openHandwrittenModal, closeHandwrittenModal, changeHandwrittenDate, handleHandwrittenPhotoUpload, handleHandwrittenDrop, removeHandwrittenPhoto,
             isGirlsExpanded, isCustomersExpanded, displayedGirls, displayedCustomers,
             girlFilterOffice, girlFilterType, girlFilterStyle, resetGirlFilters,
             girlModal, openAddGirlModal, openEditGirlModal, closeGirlModal, saveGirlModal, removeStandaloneGirlOriginalIndex,
             customerModal, openAddCustomerModal, openEditCustomerModal, closeCustomerModal, saveCustomerModal, removeStandaloneCustomerOriginalIndex,
-            invoiceModal, openInvoiceModal, closeInvoiceModal, getDrinkCashUnitPrice, getDrinkCardUnitPrice, getDrinkTotalPrice,
+            invoiceModal, openInvoiceModal, closeInvoiceModal, getDrinkCashUnitPrice, getDrinkCardUnitPrice, getDrinkTotalPrice, getDrinkItemTotalPrice, getDrinkItems, addDrinkItem, onDrinkTypeChange, removeDrinkItem, getSpecialDrinkPrice, getExternalHours,
             groupedServiceFees, invoiceModalStoreMotelItems, invoiceModalStorePersonalItems, invoiceModalDirectItems,
             currentVenue, switchVenue,
             cycleGirlMotel, cycleGirlPersonal, getMotelLabel, getMotelBtnClass, getMotelTitle, getPersonalLabel, getPersonalBtnClass, getPersonalTitle,

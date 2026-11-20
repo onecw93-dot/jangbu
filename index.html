@@ -281,6 +281,18 @@
               <span class="text-base sm:text-xl font-extrabold bg-zinc-200 dark:bg-zinc-800 px-2.5 py-1 rounded font-mono text-zinc-800 dark:text-zinc-100 whitespace-nowrap">{{ selectedDate }}</span>
               <button type="button" @click="changeHandwrittenDate(1)" class="w-8 h-8 rounded-lg bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 font-bold text-lg" title="하루 다음">›</button>
             </div>
+            <div class="flex items-center gap-2 sm:gap-3 flex-wrap justify-end">
+              <label class="flex items-center gap-1 text-[11px] sm:text-xs font-bold text-purple-600 dark:text-purple-400 cursor-pointer select-none whitespace-nowrap">
+                <input type="checkbox" v-model="currentDayData.attendance.hakmyeong" @change="saveData" class="w-3.5 h-3.5 accent-purple-600">
+                학명
+              </label>
+              <label class="flex items-center gap-1 text-[11px] sm:text-xs font-bold text-orange-600 dark:text-orange-400 cursor-pointer select-none whitespace-nowrap">
+                <input type="checkbox" v-model="currentDayData.attendance.kyungmin" @change="saveData" class="w-3.5 h-3.5 accent-orange-500">
+                경민
+              </label>
+              <span class="text-sm sm:text-base font-extrabold font-mono text-customOrange whitespace-nowrap">총 {{ handwrittenDailyDrinkSummary.total }}병</span>
+              <span class="text-[10px] sm:text-xs font-semibold text-zinc-500 dark:text-zinc-400 whitespace-nowrap">(<template v-if="handwrittenDailyDrinkSummary.details.length"><template v-for="(item, index) in handwrittenDailyDrinkSummary.details" :key="item.type"><span v-if="index > 0"> · </span>{{ item.type }} {{ item.qty }}병</template></template><template v-else>없음</template>)</span>
+            </div>
           </div>
           <button @click="closeHandwrittenModal" class="text-zinc-400 hover:text-zinc-100 text-lg font-bold px-2 shrink-0">✕</button>
         </div>
@@ -2658,6 +2670,26 @@
             return total;
           });
 
+          // 수기장부 확대 화면용: 선택 날짜의 술 종류별 수량 합계
+          const handwrittenDailyDrinkSummary = computed(() => {
+            const counts = new Map();
+            (currentDayData.value.rooms || []).forEach(room => {
+              getDrinkItems(room).forEach(drink => {
+                const type = String(drink.type || '기타');
+                const qty = Math.max(0, Number(drink.qty) || 0);
+                if (qty > 0) counts.set(type, (counts.get(type) || 0) + qty);
+              });
+            });
+            const details = Array.from(counts, ([type, qty]) => ({ type, qty }));
+            const preferredOrder = ['12년', '17년', '소맥', '특수술'];
+            details.sort((a, b) => {
+              const ai = preferredOrder.indexOf(a.type);
+              const bi = preferredOrder.indexOf(b.type);
+              return (ai < 0 ? 999 : ai) - (bi < 0 ? 999 : bi) || a.type.localeCompare(b.type, 'ko');
+            });
+            return { total: details.reduce((sum, item) => sum + item.qty, 0), details };
+          });
+
           const monthTotalDrinks = computed(() => {
             const currentYearMonth = `${calendarYear.value}-${String(calendarMonth.value + 1).padStart(2, '0')}`;
             let monthTotal = 0;
@@ -2732,7 +2764,7 @@
 
           return {
             theme, setTheme, selectedDate, searchQuery, currentDayData, saveData, addRoomCard, deleteRoom, addGirl, removeGirl, filteredRooms, filteredGirls, filteredCustomers,
-            todayTotalDrinks, monthTotalDrinks, calendarYear, calendarMonth, calendarDays, dailyRoomCountMap, prevMonth, nextMonth, selectDateFromCalendar, exportJSON, resizeTextarea, calculateGirlFee, calculateRoomTotalCash, calculateRoomTotalCard, formatKoreanFee, formatKoreanWonFull,
+            todayTotalDrinks, handwrittenDailyDrinkSummary, monthTotalDrinks, calendarYear, calendarMonth, calendarDays, dailyRoomCountMap, prevMonth, nextMonth, selectDateFromCalendar, exportJSON, resizeTextarea, calculateGirlFee, calculateRoomTotalCash, calculateRoomTotalCard, formatKoreanFee, formatKoreanWonFull,
             totalAutoCash, totalAutoCard,
             isLoggedIn, authError, authForm, handleLogin, handleLogout,
             roomQuickNavList, jumpToRoom, scrollToTop, scrollToLastRoom, syncStatus, addExtraItem, removeExtraItem, getExtraAmount,

@@ -270,49 +270,24 @@
       </div>
     </div>
 
-    <!-- 📒 수기장부 이미지 크게 보기 모달 -->
-    <div v-if="isHandwrittenModalOpen" @click.self="closeHandwrittenModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div class="bg-white dark:bg-darkCard border border-zinc-200 dark:border-darkBorder p-4 sm:p-5 rounded-2xl shadow-2xl max-w-2xl w-full space-y-4">
-        <div class="flex justify-between items-center border-b border-zinc-200 dark:border-darkBorder pb-2.5 gap-2">
-          <div class="flex items-center gap-2 min-w-0">
-            <span class="font-bold text-sm sm:text-base text-accent shrink-0">📒 수기장부</span>
-            <div class="flex items-center gap-1.5">
-              <button type="button" @click="changeHandwrittenDate(-1)" class="w-8 h-8 rounded-lg bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 font-bold text-lg" title="하루 전">‹</button>
-              <span class="text-base sm:text-xl font-extrabold bg-zinc-200 dark:bg-zinc-800 px-2.5 py-1 rounded font-mono text-zinc-800 dark:text-zinc-100 whitespace-nowrap">{{ formatDateWithWeekday(selectedDate) }}</span>
-              <button type="button" @click="changeHandwrittenDate(1)" class="w-8 h-8 rounded-lg bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 font-bold text-lg" title="하루 다음">›</button>
-            </div>
-            <div class="flex items-center gap-2 sm:gap-3 flex-wrap justify-end">
-              <label class="flex items-center gap-1 text-[11px] sm:text-xs font-bold text-purple-600 dark:text-purple-400 cursor-pointer select-none whitespace-nowrap">
-                <input type="checkbox" v-model="currentDayData.attendance.hakmyeong" @change="saveData" class="w-3.5 h-3.5 accent-purple-600">
-                학명
-              </label>
-              <label class="flex items-center gap-1 text-[11px] sm:text-xs font-bold text-orange-600 dark:text-orange-400 cursor-pointer select-none whitespace-nowrap">
-                <input type="checkbox" v-model="currentDayData.attendance.kyungmin" @change="saveData" class="w-3.5 h-3.5 accent-orange-500">
-                경민
-              </label>
-              <span class="text-sm sm:text-base font-extrabold font-mono text-customOrange whitespace-nowrap">총 {{ handwrittenDailyDrinkSummary.total }}병</span>
-              <span class="text-[10px] sm:text-xs font-semibold text-zinc-500 dark:text-zinc-400 whitespace-nowrap">(<template v-if="handwrittenDailyDrinkSummary.details.length"><template v-for="(item, index) in handwrittenDailyDrinkSummary.details" :key="item.type"><span v-if="index > 0"> · </span>{{ item.type }} {{ item.qty }}병</template></template><template v-else>없음</template>)</span>
-            </div>
+    <!-- 수기장부 이미지 확대 모달: 먼저 메인 화면 안에서 열고, 버튼을 눌렀을 때만 별도 창으로 이동 -->
+    <div v-if="isHandwrittenModalOpen" @click.self="closeHandwrittenModal" class="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6">
+      <div class="w-full max-w-6xl max-h-[96vh] bg-white dark:bg-[#171717] border border-zinc-300 dark:border-zinc-700 rounded-xl shadow-2xl flex flex-col overflow-hidden">
+        <div class="flex items-center justify-between gap-2 px-3 sm:px-5 py-3 bg-zinc-100 dark:bg-[#242424] border-b border-zinc-200 dark:border-zinc-700">
+          <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+            <button type="button" @click="changeHandwrittenDate(-1)" class="w-9 h-9 shrink-0 rounded-lg bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 font-bold text-xl">‹</button>
+            <span class="font-bold text-base sm:text-xl whitespace-nowrap">{{ formatDateWithWeekday(selectedDate) }}</span>
+            <button type="button" @click="changeHandwrittenDate(1)" class="w-9 h-9 shrink-0 rounded-lg bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 font-bold text-xl">›</button>
           </div>
-          <button @click="closeHandwrittenModal" class="text-zinc-400 hover:text-zinc-100 text-lg font-bold px-2 shrink-0">✕</button>
+          <div class="flex items-center gap-2 shrink-0">
+            <span class="hidden sm:inline text-[11px] sm:text-xs text-zinc-500">총 {{ handwrittenDailyDrinkSummary.total }}병<span v-if="handwrittenDailyDrinkSummary.details.length"> ({{ handwrittenDailyDrinkSummary.details.map(x => `${x.type} ${x.qty}병`).join(' · ') }})</span></span>
+            <button type="button" @click="openHandwrittenPopup" class="px-3 py-2 rounded-lg bg-accent hover:bg-accentHover text-black text-xs font-bold">팝업으로 열기</button>
+            <button type="button" @click="closeHandwrittenModal" class="w-9 h-9 rounded-lg bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 font-bold">✕</button>
+          </div>
         </div>
-
-        <div class="flex justify-center items-center bg-zinc-100 dark:bg-[#161616] rounded-xl overflow-hidden min-h-[280px] max-h-[70vh]">
-          <img v-if="currentDayData.handwrittenPhotoUrl" :src="currentDayData.handwrittenPhotoUrl" alt="수기장부 확대 이미지" class="max-w-full max-h-[70vh] object-contain">
-          <div v-else class="text-sm sm:text-base font-semibold text-zinc-500 py-16">{{ formatDateWithWeekday(selectedDate) }} · 이미지 없음</div>
-        </div>
-
-        <div class="flex justify-between items-center gap-2 pt-1">
-          <label class="flex-1 text-center py-2.5 px-3 bg-accent hover:bg-accentHover text-zinc-950 font-bold rounded-lg text-xs cursor-pointer transition">
-            📷 사진 변경 / 업로드
-            <input type="file" accept="image/*" class="hidden" @change="handleHandwrittenPhotoUpload($event)">
-          </label>
-          <button v-if="currentDayData.handwrittenPhotoUrl" @click="removeHandwrittenPhoto" class="py-2.5 px-3 bg-rose-500/15 hover:bg-rose-500/25 text-rose-500 font-bold rounded-lg text-xs transition">
-            사진 삭제
-          </button>
-          <button @click="closeHandwrittenModal" class="py-2.5 px-4 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 font-bold rounded-lg text-xs transition">
-            닫기
-          </button>
+        <div class="flex-1 min-h-0 flex items-center justify-center bg-zinc-200 dark:bg-[#101010] p-2 sm:p-4 overflow-auto">
+          <img v-if="currentDayData.handwrittenPhotoUrl" :src="currentDayData.handwrittenPhotoUrl" alt="수기장부 확대 이미지" class="max-w-full max-h-[calc(96vh-100px)] object-contain">
+          <div v-else class="text-zinc-500 font-bold text-base sm:text-lg py-20">{{ formatDateWithWeekday(selectedDate) }} · 이미지 없음</div>
         </div>
       </div>
     </div>
@@ -1220,7 +1195,7 @@
       const SUPABASE_URL = 'https://ickxgwkvkcgrehufmwut.supabase.co';
       const SUPABASE_KEY = 'sb_publishable_GLv8OIRpMqaI80yBdGng_w_Bh6Wxgqr';
       const STORAGE_BUCKET = 'profile-images';
-      const { createApp, ref, computed, onMounted, onBeforeUnmount } = Vue;
+      const { createApp, ref, computed, watch, onMounted, onBeforeUnmount } = Vue;
 
       createApp({
         setup() {
@@ -1446,20 +1421,84 @@
 
           // 수기장부 이미지 업로드 및 진행 상태
           const isHandwrittenModalOpen = ref(false);
+          let handwrittenPopupWindow = null;
           const isHandwrittenUploading = ref(false);
           const handwrittenUploadStage = ref('');
           const handwrittenUploadProgress = ref(0);
           const handwrittenUploadError = ref('');
 
+          const escapePopupHtml = (value) => String(value ?? '').replace(/[&<>\"']/g, (ch) => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[ch]));
+
+          const getHandwrittenPopupPayload = () => ({
+            date: formatDateWithWeekday(selectedDate.value),
+            imageUrl: currentDayData.value.handwrittenPhotoUrl || ''
+          });
+
+          const updateHandwrittenPopup = () => {
+            if (handwrittenPopupWindow && !handwrittenPopupWindow.closed) {
+              handwrittenPopupWindow.postMessage({ type: 'handwritten-update', ...getHandwrittenPopupPayload() }, '*');
+            }
+          };
+
           const openHandwrittenModal = () => {
-            if (!isHandwrittenUploading.value) isHandwrittenModalOpen.value = true;
+            if (isHandwrittenUploading.value) return;
+            isHandwrittenModalOpen.value = true;
+          };
+
+          // 확대 모달의 버튼을 눌렀을 때만 별도 브라우저 팝업을 엽니다.
+          const openHandwrittenPopup = () => {
+            if (isHandwrittenUploading.value) return;
+            const payload = getHandwrittenPopupPayload();
+            if (handwrittenPopupWindow && !handwrittenPopupWindow.closed) {
+              handwrittenPopupWindow.focus();
+              updateHandwrittenPopup();
+              isHandwrittenModalOpen.value = false;
+              return;
+            }
+            const popup = window.open('', 'handwrittenLedgerImage', 'popup=yes,width=1100,height=900,resizable=yes,scrollbars=yes');
+            if (!popup) {
+              alert('팝업이 차단되었습니다. 브라우저에서 이 사이트의 팝업을 허용해 주세요.');
+              return;
+            }
+            handwrittenPopupWindow = popup;
+            const initialDate = escapePopupHtml(payload.date);
+            const initialUrl = escapePopupHtml(payload.imageUrl);
+            popup.document.open();
+            popup.document.write(`<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>수기장부</title><style>
+              *{box-sizing:border-box}body{margin:0;background:#171717;color:#f4f4f5;font-family:Arial,'Malgun Gothic',sans-serif;display:flex;flex-direction:column;height:100vh}
+              header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;background:#262626;border-bottom:1px solid #444;position:sticky;top:0}
+              .left{display:flex;align-items:center;gap:12px;min-width:0}.title{font-weight:800;color:#00ff66;white-space:nowrap}.date{font-size:19px;font-weight:800;white-space:nowrap}
+              button{border:0;border-radius:8px;background:#3f3f46;color:white;font-size:22px;font-weight:bold;width:38px;height:38px;cursor:pointer}button:hover{background:#52525b}
+              main{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:12px;overflow:auto}img{display:block;max-width:100%;max-height:100%;object-fit:contain}.empty{color:#a1a1aa;font-weight:700;font-size:17px}
+              @media(max-width:600px){header{padding:9px}.date{font-size:15px}.title{font-size:13px}.left{gap:6px}main{padding:5px}}
+              </style></head><body><header><div class="left"><span class="title">📒 수기장부</span><button id="prev" title="하루 전">‹</button><span class="date" id="date">${initialDate}</span><button id="next" title="하루 다음">›</button></div><button id="close" title="닫기" style="font-size:18px">✕</button></header><main id="view"></main>
+              <script>
+                const view=document.getElementById('view'), dateEl=document.getElementById('date');
+                function render(data){dateEl.textContent=data.date||'';view.innerHTML='';if(data.imageUrl){const img=document.createElement('img');img.src=data.imageUrl;img.alt='수기장부 확대 이미지';view.appendChild(img)}else{const empty=document.createElement('div');empty.className='empty';empty.textContent=(data.date||'')+' · 이미지 없음';view.appendChild(empty)}}
+                render({date:'${initialDate}',imageUrl:'${initialUrl}'});
+                document.getElementById('prev').onclick=()=>window.opener&&window.opener.postMessage({type:'handwritten-date-change',offset:-1},'*');
+                document.getElementById('next').onclick=()=>window.opener&&window.opener.postMessage({type:'handwritten-date-change',offset:1},'*');
+                document.getElementById('close').onclick=()=>window.close();
+                window.addEventListener('message',e=>{if(e.source===window.opener&&e.data&&e.data.type==='handwritten-update')render(e.data)});
+                window.addEventListener('keydown',e=>{if(e.key==='ArrowLeft')document.getElementById('prev').click();else if(e.key==='ArrowRight')document.getElementById('next').click()});
+              <\/script></body></html>`);
+            popup.document.close();
+            popup.focus();
+            // 팝업이 정상적으로 생성된 뒤 메인 화면의 확대 모달만 닫습니다.
+            isHandwrittenModalOpen.value = false;
           };
 
           const closeHandwrittenModal = () => {
             isHandwrittenModalOpen.value = false;
           };
 
-          // 수기장부 확대 화면 날짜 이동: 하루 단위로 이동하며 이미지가 없는 날짜도 표시
+          const handleHandwrittenPopupMessage = (event) => {
+            if (!handwrittenPopupWindow || event.source !== handwrittenPopupWindow || !event.data) return;
+            if (event.data.type === 'handwritten-date-change') changeHandwrittenDate(Number(event.data.offset) || 0);
+          };
+
+
+          // 수기장부 확대 화면 및 팝업 날짜 이동: 하루 단위로 이동하며 이미지가 없는 날짜도 표시
           const changeHandwrittenDate = (offset) => {
             const [year, month, day] = selectedDate.value.split('-').map(Number);
             const target = new Date(year, month - 1, day);
@@ -1976,6 +2015,7 @@
 
           onMounted(() => {
             window.addEventListener('keydown', handleHandwrittenModalKeydown);
+            window.addEventListener('message', handleHandwrittenPopupMessage);
             if (isLoggedIn.value) {
               fetchCloudData();
             }
@@ -1983,6 +2023,8 @@
 
           onBeforeUnmount(() => {
             window.removeEventListener('keydown', handleHandwrittenModalKeydown);
+            window.removeEventListener('message', handleHandwrittenPopupMessage);
+            if (handwrittenPopupWindow && !handwrittenPopupWindow.closed) handwrittenPopupWindow.close();
           });
 
           const getCustomDateStr = (targetDate = new Date()) => {
@@ -2034,6 +2076,9 @@
             initDateData(selectedDate.value);
             return db.value[selectedDate.value];
           });
+
+          // currentDayData 선언 이후에 등록해야 Vue setup 초기화 시 TDZ 오류가 발생하지 않습니다.
+          watch(() => [selectedDate.value, currentDayData.value && currentDayData.value.handwrittenPhotoUrl], () => updateHandwrittenPopup());
 
           const totalAutoCash = computed(() => {
             let sum = Number(currentDayData.value.mCash) || 0;
@@ -2779,7 +2824,7 @@
             isLoggedIn, authError, authForm, handleLogin, handleLogout,
             roomQuickNavList, jumpToRoom, scrollToTop, scrollToLastRoom, syncStatus, addExtraItem, removeExtraItem, getExtraAmount,
             previewGirl, openPhotoModal, closePhotoModal, handlePhotoUpload, removeGirlPhoto,
-            isHandwrittenModalOpen, isHandwrittenUploading, handwrittenUploadStage, handwrittenUploadProgress, handwrittenUploadError, openHandwrittenModal, closeHandwrittenModal, changeHandwrittenDate, handleHandwrittenPhotoUpload, handleHandwrittenDrop, removeHandwrittenPhoto,
+            isHandwrittenModalOpen, isHandwrittenUploading, handwrittenUploadStage, handwrittenUploadProgress, handwrittenUploadError, openHandwrittenModal, openHandwrittenPopup, closeHandwrittenModal, changeHandwrittenDate, handleHandwrittenPhotoUpload, handleHandwrittenDrop, removeHandwrittenPhoto,
             isGirlsExpanded, isCustomersExpanded, displayedGirls, displayedCustomers,
             girlFilterOffice, girlFilterType, girlFilterStyle, resetGirlFilters,
             girlModal, openAddGirlModal, openEditGirlModal, closeGirlModal, saveGirlModal, removeStandaloneGirlOriginalIndex,

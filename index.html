@@ -45,6 +45,15 @@
     ::-webkit-scrollbar-thumb { background: #484848; border-radius: 3px; }
     ::-webkit-scrollbar-track { background: transparent; }
     textarea { resize: none; overflow: hidden; }
+    input[type="number"].no-spin::-webkit-outer-spin-button,
+    input[type="number"].no-spin::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    input[type="number"].no-spin {
+      -moz-appearance: textfield;
+      appearance: textfield;
+    }
   </style>
 </head>
 <body class="bg-zinc-100 dark:bg-darkBg text-zinc-800 dark:text-zinc-100 p-4 sm:p-6 md:p-8 min-h-screen transition-colors duration-200">
@@ -273,16 +282,26 @@
     <!-- 수기장부 이미지 확대 모달: 먼저 메인 화면 안에서 열고, 버튼을 눌렀을 때만 별도 창으로 이동 -->
     <div v-if="isHandwrittenModalOpen" @click.self="closeHandwrittenModal" class="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6">
       <div class="w-full max-w-6xl max-h-[96vh] bg-white dark:bg-[#171717] border border-zinc-300 dark:border-zinc-700 rounded-xl shadow-2xl flex flex-col overflow-hidden">
-        <div class="flex items-center justify-between gap-2 px-3 sm:px-5 py-3 bg-zinc-100 dark:bg-[#242424] border-b border-zinc-200 dark:border-zinc-700">
-          <div class="flex items-center gap-2 sm:gap-3 min-w-0">
-            <button type="button" @click="changeHandwrittenDate(-1)" class="w-9 h-9 shrink-0 rounded-lg bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 font-bold text-xl">‹</button>
+        <div class="flex items-center justify-between gap-2 px-3 sm:px-5 py-3 bg-zinc-100 dark:bg-[#242424] border-b border-zinc-200 dark:border-zinc-700 overflow-x-auto">
+          <div class="flex items-center gap-2 sm:gap-3 min-w-0 shrink-0">
+            <button type="button" @click="changeHandwrittenDate(-1)" class="w-8 h-8 sm:w-9 sm:h-9 shrink-0 rounded-lg bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 font-bold text-lg sm:text-xl">‹</button>
             <span class="font-bold text-base sm:text-xl whitespace-nowrap">{{ formatDateWithWeekday(selectedDate) }}</span>
-            <button type="button" @click="changeHandwrittenDate(1)" class="w-9 h-9 shrink-0 rounded-lg bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 font-bold text-xl">›</button>
+            <button type="button" @click="changeHandwrittenDate(1)" class="w-8 h-8 sm:w-9 sm:h-9 shrink-0 rounded-lg bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 font-bold text-lg sm:text-xl">›</button>
+            <label class="flex items-center gap-1 text-xs sm:text-sm font-semibold text-purple-600 dark:text-purple-400 cursor-pointer select-none whitespace-nowrap">
+              <input type="checkbox" v-model="currentDayData.attendance.hakmyeong" @change="saveData" class="w-3.5 h-3.5 accent-purple-600">
+              학명
+            </label>
+            <label class="flex items-center gap-1 text-xs sm:text-sm font-semibold text-orange-600 dark:text-orange-400 cursor-pointer select-none whitespace-nowrap">
+              <input type="checkbox" v-model="currentDayData.attendance.kyungmin" @change="saveData" class="w-3.5 h-3.5 accent-orange-500">
+              경민
+            </label>
+            <span class="text-xs sm:text-sm font-bold whitespace-nowrap">
+              총 {{ handwrittenDailyDrinkSummary.total }}병<span v-if="handwrittenDailyDrinkSummary.details.length" class="text-[11px] font-normal text-zinc-500 dark:text-zinc-400"> ({{ handwrittenDailyDrinkSummary.details.map(x => `${x.type} ${x.qty}병`).join(' · ') }})</span>
+            </span>
           </div>
-          <div class="flex items-center gap-2 shrink-0">
-            <span class="hidden sm:inline text-[11px] sm:text-xs text-zinc-500">총 {{ handwrittenDailyDrinkSummary.total }}병<span v-if="handwrittenDailyDrinkSummary.details.length"> ({{ handwrittenDailyDrinkSummary.details.map(x => `${x.type} ${x.qty}병`).join(' · ') }})</span></span>
-            <button type="button" @click="openHandwrittenPopup" class="px-3 py-2 rounded-lg bg-accent hover:bg-accentHover text-black text-xs font-bold">팝업으로 열기</button>
-            <button type="button" @click="closeHandwrittenModal" class="w-9 h-9 rounded-lg bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 font-bold">✕</button>
+          <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <button type="button" @click="openHandwrittenPopup" class="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-accent hover:bg-accentHover text-black text-xs font-bold whitespace-nowrap">팝업으로 열기</button>
+            <button type="button" @click="closeHandwrittenModal" class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 font-bold text-xs sm:text-sm">✕</button>
           </div>
         </div>
         <div class="flex-1 min-h-0 flex items-center justify-center bg-zinc-200 dark:bg-[#101010] p-2 sm:p-4 overflow-auto">
@@ -559,7 +578,7 @@
                 변경
                 <input type="file" accept="image/*,.heic,.heif" class="hidden" :disabled="isHandwrittenUploading" @change="handleHandwrittenPhotoUpload($event)">
               </label>
-              <button type="button" :disabled="isHandwrittenUploading" @click="removeHandwrittenPhoto" class="py-1.5 px-2.5 bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 font-bold rounded-lg text-[11px] transition disabled:opacity-40">
+              <button type="button" :disabled="isHandwrittenUploading" @click="removeHandwrittenPhoto" class="py-1.5 px-2.5 bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 font-bold rounded-lg text-[11px] transition disabled:opacity:40">
                 삭제
               </button>
             </div>
@@ -720,7 +739,7 @@
                         <option :value="0">특수 금액 선택</option><option v-for="n in 16" :key="'sp'+n" :value="n * 50000">{{ (n * 5).toLocaleString() }}만원</option><option :value="-1">직접 입력</option>
                       </select>
                       <div v-if="Number(drink.specialPrice) === -1" class="w-[42%] flex items-center gap-1">
-                        <input type="number" min="0" step="1" v-model.number="drink.specialCustomPriceMan" @input="saveData" placeholder="만원 단위" class="w-full min-w-0 p-1.5 rounded bg-white dark:bg-[#222] border border-customOrange/50 text-customOrange font-bold outline-none text-xs text-right">
+                        <input type="number" min="0" step="1" v-model.number="drink.specialCustomPriceMan" @input="saveData" placeholder="만원 단위" class="no-spin w-full min-w-0 p-1.5 rounded bg-white dark:bg-[#222] border border-customOrange/50 text-customOrange font-bold outline-none text-xs text-right">
                         <span class="text-[10px] text-customOrange">만원</span>
                       </div>
                     </div>
@@ -748,7 +767,7 @@
                         <option :value="-1">직접 입력</option>
                       </select>
                       <div v-if="Number(ex.amount) === -1" class="w-[32%] flex items-center gap-1">
-                        <input type="number" min="0" step="1" v-model.number="ex.customAmountMan" @input="saveData" placeholder="만원" class="w-full min-w-0 p-1 rounded bg-white dark:bg-[#222] border border-customOrange/50 text-customOrange font-bold text-[11px] text-right outline-none">
+                        <input type="number" min="0" step="1" v-model.number="ex.customAmountMan" @input="saveData" placeholder="만원" class="no-spin w-full min-w-0 p-1 rounded bg-white dark:bg-[#222] border border-customOrange/50 text-customOrange font-bold text-[11px] text-right outline-none">
                         <span class="text-[9px] text-customOrange">만원</span>
                       </div>
 
@@ -872,7 +891,7 @@
                 <div>
                   <label class="block text-[10px] text-zinc-400 mb-0.5">결제금액 1 (₩)</label>
                   <div class="flex gap-1.5">
-                    <input type="number" v-model.number="roomWrap._originalRef.price" @input="saveData" placeholder="금액 입력" class="flex-1 min-w-[90px] p-1.5 rounded bg-white dark:bg-[#1e1e1e] border border-zinc-200 dark:border-darkBorder text-accent font-mono font-bold outline-none focus:border-accent text-xs">
+                    <input type="number" v-model.number="roomWrap._originalRef.price" @input="saveData" placeholder="금액 입력" class="no-spin flex-1 min-w-[90px] p-1.5 rounded bg-white dark:bg-[#1e1e1e] border border-zinc-200 dark:border-darkBorder text-accent font-mono font-bold outline-none focus:border-accent text-xs">
                     <select v-model="roomWrap._originalRef.payMethod" @change="saveData" class="w-[65px] shrink-0 p-1.5 rounded bg-white dark:bg-[#1e1e1e] border border-zinc-200 dark:border-darkBorder text-customOrange font-semibold outline-none text-xs text-center">
                       <option value="현금">현금</option>
                       <option value="카드">카드</option>
@@ -883,7 +902,7 @@
                 <div>
                   <label class="block text-[10px] text-zinc-400 mb-0.5">결제금액 2 (₩)</label>
                   <div class="flex gap-1.5">
-                    <input type="number" v-model.number="roomWrap._originalRef.price2" @input="saveData" placeholder="금액 입력" class="flex-1 min-w-[90px] p-1.5 rounded bg-white dark:bg-[#1e1e1e] border border-zinc-200 dark:border-darkBorder text-accent font-mono font-bold outline-none focus:border-accent text-xs">
+                    <input type="number" v-model.number="roomWrap._originalRef.price2" @input="saveData" placeholder="금액 입력" class="no-spin flex-1 min-w-[90px] p-1.5 rounded bg-white dark:bg-[#1e1e1e] border border-zinc-200 dark:border-darkBorder text-accent font-mono font-bold outline-none focus:border-accent text-xs">
                     <select v-model="roomWrap._originalRef.payMethod2" @change="saveData" class="w-[65px] shrink-0 p-1.5 rounded bg-white dark:bg-[#1e1e1e] border border-zinc-200 dark:border-darkBorder text-customOrange font-semibold outline-none text-xs text-center">
                       <option value="현금">현금</option>
                       <option value="카드">카드</option>
@@ -1153,15 +1172,15 @@
             <span class="font-bold text-accent block border-b border-zinc-700 pb-1">[ 매출 항목 ]</span>
             <div class="flex items-center justify-between">
               <span class="text-zinc-400">현금 매출 (테이블 자동 + 수동):</span>
-              <input type="number" v-model.number="currentDayData.mCash" @input="saveData" class="p-1 rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-right w-32 font-mono text-zinc-100 outline-none">
+              <input type="number" v-model.number="currentDayData.mCash" @input="saveData" class="no-spin p-1 rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-right w-32 font-mono text-zinc-100 outline-none">
             </div>
             <div class="flex items-center justify-between">
               <span class="text-zinc-400">카드 매출 (테이블 자동 + 수동):</span>
-              <input type="number" v-model.number="currentDayData.mCard" @input="saveData" class="p-1 rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-right w-32 font-mono text-zinc-100 outline-none">
+              <input type="number" v-model.number="currentDayData.mCard" @input="saveData" class="no-spin p-1 rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-right w-32 font-mono text-zinc-100 outline-none">
             </div>
             <div class="flex items-center justify-between">
               <span class="text-rose-400">외상 발생:</span>
-              <input type="number" v-model.number="currentDayData.mCredit" @input="saveData" class="p-1 rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-right w-32 font-mono text-rose-400 outline-none">
+              <input type="number" v-model.number="currentDayData.mCredit" @input="saveData" class="no-spin p-1 rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-right w-32 font-mono text-rose-400 outline-none">
             </div>
             <div class="flex items-center justify-between pt-2 border-t border-zinc-700 font-bold">
               <span>매출 합계:</span>
@@ -1173,11 +1192,11 @@
             <span class="font-bold text-customOrange block border-b border-zinc-700 pb-1">[ 매입 / 지출 항목 ]</span>
             <div class="flex items-center justify-between">
               <span class="text-zinc-400">현금 지출:</span>
-              <input type="number" v-model.number="currentDayData.pCash" @input="saveData" class="p-1 rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-right w-32 font-mono text-zinc-100 outline-none">
+              <input type="number" v-model.number="currentDayData.pCash" @input="saveData" class="no-spin p-1 rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-right w-32 font-mono text-zinc-100 outline-none">
             </div>
             <div class="flex items-center justify-between">
               <span class="text-zinc-400">카드 지출:</span>
-              <input type="number" v-model.number="currentDayData.pCard" @input="saveData" class="p-1 rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-right w-32 font-mono text-zinc-100 outline-none">
+              <input type="number" v-model.number="currentDayData.pCard" @input="saveData" class="no-spin p-1 rounded bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-300 dark:border-darkBorder text-right w-32 font-mono text-zinc-100 outline-none">
             </div>
             <div class="flex items-center justify-between pt-6 border-t border-zinc-700 font-bold">
               <span>매입 합계:</span>
@@ -1429,10 +1448,16 @@
 
           const escapePopupHtml = (value) => String(value ?? '').replace(/[&<>\"']/g, (ch) => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[ch]));
 
-          const getHandwrittenPopupPayload = () => ({
-            date: formatDateWithWeekday(selectedDate.value),
-            imageUrl: currentDayData.value.handwrittenPhotoUrl || ''
-          });
+          const getHandwrittenPopupPayload = () => {
+            const att = (currentDayData.value && currentDayData.value.attendance) || {};
+            return {
+              date: formatDateWithWeekday(selectedDate.value),
+              hakmyeong: Boolean(att.hakmyeong),
+              kyungmin: Boolean(att.kyungmin),
+              drinkSummary: handwrittenDailyDrinkSummary.value,
+              imageUrl: currentDayData.value.handwrittenPhotoUrl || ''
+            };
+          };
 
           const updateHandwrittenPopup = () => {
             if (handwrittenPopupWindow && !handwrittenPopupWindow.closed) {
@@ -1461,21 +1486,38 @@
               return;
             }
             handwrittenPopupWindow = popup;
-            const initialDate = escapePopupHtml(payload.date);
-            const initialUrl = escapePopupHtml(payload.imageUrl);
+            const initialJson = JSON.stringify(payload).replace(/</g, '\\u003c');
             popup.document.open();
             popup.document.write(`<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>수기장부</title><style>
               *{box-sizing:border-box}body{margin:0;background:#171717;color:#f4f4f5;font-family:Arial,'Malgun Gothic',sans-serif;display:flex;flex-direction:column;height:100vh}
-              header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;background:#262626;border-bottom:1px solid #444;position:sticky;top:0}
-              .left{display:flex;align-items:center;gap:12px;min-width:0}.title{font-weight:800;color:#00ff66;white-space:nowrap}.date{font-size:19px;font-weight:800;white-space:nowrap}
-              button{border:0;border-radius:8px;background:#3f3f46;color:white;font-size:22px;font-weight:bold;width:38px;height:38px;cursor:pointer}button:hover{background:#52525b}
+              header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;background:#262626;border-bottom:1px solid #444;position:sticky;top:0;overflow-x:auto}
+              .left{display:flex;align-items:center;gap:10px;min-width:0;flex-shrink:0}.title{font-weight:800;color:#00ff66;white-space:nowrap;font-size:14px}.date{font-size:18px;font-weight:800;white-space:nowrap}
+              .att-label{display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:700;cursor:pointer;user-select:none;white-space:nowrap}
+              .att-hak{color:#c084fc;accent-color:#9333ea}.att-kyung{color:#fb923c;accent-color:#f97316}
+              .att-label input{width:14px;height:14px;margin:0;cursor:pointer}
+              .drink-sum{font-size:13px;font-weight:800;white-space:nowrap;color:#f4f4f5}
+              .drink-det{font-size:11px;font-weight:400;color:#a1a1aa}
+              button.nav-btn{border:0;border-radius:8px;background:#3f3f46;color:white;font-size:20px;font-weight:bold;width:34px;height:34px;cursor:pointer;flex-shrink:0}button.nav-btn:hover{background:#52525b}
+              button.close-btn{border:0;border-radius:8px;background:#3f3f46;color:white;font-size:16px;font-weight:bold;width:34px;height:34px;cursor:pointer;flex-shrink:0}button.close-btn:hover{background:#52525b}
               main{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:12px;overflow:auto}img{display:block;max-width:100%;max-height:100%;object-fit:contain}.empty{color:#a1a1aa;font-weight:700;font-size:17px}
-              @media(max-width:600px){header{padding:9px}.date{font-size:15px}.title{font-size:13px}.left{gap:6px}main{padding:5px}}
-              </style></head><body><header><div class="left"><span class="title">📒 수기장부</span><button id="prev" title="하루 전">‹</button><span class="date" id="date">${initialDate}</span><button id="next" title="하루 다음">›</button></div><button id="close" title="닫기" style="font-size:18px">✕</button></header><main id="view"></main>
+              @media(max-width:600px){header{padding:8px 10px;gap:6px}.date{font-size:15px}.title{font-size:12px}.left{gap:6px}.att-label,.drink-sum{font-size:12px}main{padding:5px}}
+              </style></head><body><header><div class="left"><span class="title">📒 수기장부</span><button class="nav-btn" id="prev" title="하루 전">‹</button><span class="date" id="date"></span><button class="nav-btn" id="next" title="하루 다음">›</button><label class="att-label att-hak"><input type="checkbox" id="chk-hak">학명</label><label class="att-label att-kyung"><input type="checkbox" id="chk-kyung">경민</label><span class="drink-sum" id="drink-sum"></span></div><button class="close-btn" id="close" title="닫기">✕</button></header><main id="view"></main>
               <script>
-                const view=document.getElementById('view'), dateEl=document.getElementById('date');
-                function render(data){dateEl.textContent=data.date||'';view.innerHTML='';if(data.imageUrl){const img=document.createElement('img');img.src=data.imageUrl;img.alt='수기장부 확대 이미지';view.appendChild(img)}else{const empty=document.createElement('div');empty.className='empty';empty.textContent=(data.date||'')+' · 이미지 없음';view.appendChild(empty)}}
-                render({date:'${initialDate}',imageUrl:'${initialUrl}'});
+                const view=document.getElementById('view'), dateEl=document.getElementById('date'), chkHak=document.getElementById('chk-hak'), chkKyung=document.getElementById('chk-kyung'), drinkSumEl=document.getElementById('drink-sum');
+                function render(data){
+                  dateEl.textContent=data.date||'';
+                  chkHak.checked=Boolean(data.hakmyeong);
+                  chkKyung.checked=Boolean(data.kyungmin);
+                  const ds=data.drinkSummary||{total:0,details:[]};
+                  const detText=(ds.details&&ds.details.length)?' ('+ds.details.map(x=>x.type+' '+x.qty+'병').join(' · ')+')':'';
+                  drinkSumEl.innerHTML='총 '+(ds.total||0)+'병'+(detText?'<span class="drink-det">'+detText+'</span>':'');
+                  view.innerHTML='';
+                  if(data.imageUrl){const img=document.createElement('img');img.src=data.imageUrl;img.alt='수기장부 확대 이미지';view.appendChild(img)}
+                  else{const empty=document.createElement('div');empty.className='empty';empty.textContent=(data.date||'')+' · 이미지 없음';view.appendChild(empty)}
+                }
+                render(${initialJson});
+                chkHak.onchange=()=>window.opener&&window.opener.postMessage({type:'handwritten-attendance-change',person:'hakmyeong',checked:chkHak.checked},'*');
+                chkKyung.onchange=()=>window.opener&&window.opener.postMessage({type:'handwritten-attendance-change',person:'kyungmin',checked:chkKyung.checked},'*');
                 document.getElementById('prev').onclick=()=>window.opener&&window.opener.postMessage({type:'handwritten-date-change',offset:-1},'*');
                 document.getElementById('next').onclick=()=>window.opener&&window.opener.postMessage({type:'handwritten-date-change',offset:1},'*');
                 document.getElementById('close').onclick=()=>window.close();
@@ -1494,7 +1536,17 @@
 
           const handleHandwrittenPopupMessage = (event) => {
             if (!handwrittenPopupWindow || event.source !== handwrittenPopupWindow || !event.data) return;
-            if (event.data.type === 'handwritten-date-change') changeHandwrittenDate(Number(event.data.offset) || 0);
+            if (event.data.type === 'handwritten-date-change') {
+              changeHandwrittenDate(Number(event.data.offset) || 0);
+            } else if (event.data.type === 'handwritten-attendance-change') {
+              const person = event.data.person;
+              if (person === 'hakmyeong' || person === 'kyungmin') {
+                initDateData(selectedDate.value);
+                currentDayData.value.attendance[person] = Boolean(event.data.checked);
+                saveData();
+                updateHandwrittenPopup();
+              }
+            }
           };
 
 
@@ -2076,9 +2128,6 @@
             initDateData(selectedDate.value);
             return db.value[selectedDate.value];
           });
-
-          // currentDayData 선언 이후에 등록해야 Vue setup 초기화 시 TDZ 오류가 발생하지 않습니다.
-          watch(() => [selectedDate.value, currentDayData.value && currentDayData.value.handwrittenPhotoUrl], () => updateHandwrittenPopup());
 
           const totalAutoCash = computed(() => {
             let sum = Number(currentDayData.value.mCash) || 0;
@@ -2725,12 +2774,14 @@
             return total;
           });
 
-          // 수기장부 확대 화면용: 선택 날짜의 술 종류별 수량 합계
+          // 수기장부 확대 화면 및 팝업용: 선택 날짜의 술 종류별 수량 합계
           const handwrittenDailyDrinkSummary = computed(() => {
             const counts = new Map();
             (currentDayData.value.rooms || []).forEach(room => {
               getDrinkItems(room).forEach(drink => {
-                const type = String(drink.type || '기타');
+                const rawType = String(drink.type || '').trim();
+                if (!rawType) return;
+                const type = rawType === '특수' ? '특수술' : rawType;
                 const qty = Math.max(0, Number(drink.qty) || 0);
                 if (qty > 0) counts.set(type, (counts.get(type) || 0) + qty);
               });
@@ -2744,6 +2795,22 @@
             });
             return { total: details.reduce((sum, item) => sum + item.qty, 0), details };
           });
+
+          // currentDayData 및 handwrittenDailyDrinkSummary 선언 이후에 동기화 watch 등록
+          watch(
+            () => {
+              const day = currentDayData.value;
+              const att = (day && day.attendance) || {};
+              return [
+                selectedDate.value,
+                day && day.handwrittenPhotoUrl,
+                Boolean(att.hakmyeong),
+                Boolean(att.kyungmin),
+                JSON.stringify(handwrittenDailyDrinkSummary.value)
+              ];
+            },
+            () => updateHandwrittenPopup()
+          );
 
           const monthTotalDrinks = computed(() => {
             const currentYearMonth = `${calendarYear.value}-${String(calendarMonth.value + 1).padStart(2, '0')}`;
